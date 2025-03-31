@@ -5,6 +5,7 @@ import { Tooltip } from 'react-tooltip'; // ✅ Import react-tooltip
 import { Navbar, Sidebar, ThemeSettings } from '../components';
 import { Dashboard, Posts, Categories, SubCategories } from '../pages';
 import { useStateContext } from '../contexts/ContextProvider';
+import Users from '../pages/Users';
 
 const DashboardRoutes = () => {
   const { setCurrentColor, setCurrentMode, currentMode, activeMenu, currentColor, themeSettings, setThemeSettings } = useStateContext();
@@ -37,7 +38,7 @@ const DashboardRoutes = () => {
           </Tooltip>
         </div>
         {activeMenu ? (
-          <div className="w-72 fixed sidebar dark:bg-secondary-dark-bg bg-white ">
+          <div className="sidebar dark:bg-secondary-dark-bg shadow-lg">
             <Sidebar />
           </div>
         ) : (
@@ -63,6 +64,7 @@ const DashboardRoutes = () => {
               <Route path="dashboard" element={(<Dashboard />)} />
 
               {/* pages  */}
+              <Route path="users" element={(<Users />)} />
               <Route path="categories" element={<Categories />} />
               <Route path="subcategories" element={<SubCategories />} />
               <Route path="posts" element={<Posts />} />

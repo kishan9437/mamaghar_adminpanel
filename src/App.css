@@ -50,3 +50,12 @@ p {
   margin-top: 0;
   margin-bottom: 0.3rem !important;
 }
+
+.theme-sidebar {
+  transition: transform 0.5s ease-in-out;
+  transform: translateX(100%);
+}
+
+.theme-sidebar.open-sidebar {
+  transform: translateX(0);
+}

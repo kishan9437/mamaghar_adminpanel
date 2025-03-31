@@ -4,20 +4,31 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 
-const CategoryModal = ({ show, handleClose,refreshData }) => {
+const CategoryModal = ({ show, handleClose, refreshData }) => {
     const [category, setCategory] = useState({
-        name: "",
-        type: "",
-        titleHint: "",
-        detailsHint: "",
+        en: { name: "", type: "", titleHint: "", detailsHint: "" },
+        gu: { name: "", type: "", titleHint: "", detailsHint: "" },
+        hi: { name: "", type: "", titleHint: "", detailsHint: "" }
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const [selectedLanguage, setSelectedLanguage] = useState("en");
 
     const handleChange = (e) => {
-        setCategory({ ...category, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setCategory({
+            ...category,
+            [selectedLanguage]: {
+                ...category[selectedLanguage],
+                [name]: value
+            }
+        });
+    };
+
+    const handleLanguageChange = (e) => {
+        setSelectedLanguage(e.target.value);
     };
 
     const handleSubmit = async (e) => {
@@ -28,15 +39,44 @@ const CategoryModal = ({ show, handleClose,refreshData }) => {
 
         try {
             const token = localStorage.getItem('token');
+
             if (!token) {
                 console.error("No authentication token found.");
                 navigate('/login'); // Redirect to login page
                 return;
             }
 
+            const requestData = {
+                name: category.en.name || "", // Ensure English name
+                type: category.en.type || "",
+                titleHint: category.en.titleHint || "",
+                detailsHint: category.en.detailsHint || "",
+                languages: {
+                    en: {
+                        name: category.en.name || "",  // Default English
+                        type: category.en.type || "",
+                        titleHint: category.en.titleHint || "",
+                        detailsHint: category.en.detailsHint || ""
+                    },
+                    gu: {
+                        name: category.gu.name || "",
+                        type: category.gu.type || "",
+                        titleHint: category.gu.titleHint || "",
+                        detailsHint: category.gu.detailsHint || ""
+                    },
+                    hi: {
+                        name: category.hi.name || "",
+                        type: category.hi.type || "",
+                        titleHint: category.hi.titleHint || "",
+                        detailsHint: category.hi.detailsHint || ""
+                    }
+                }
+            };
+            
             const response = await axios.post(
                 `${API_BASE_URL}/post-category`,
-                category,
+                // { languages: category },
+                requestData,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`, // Add token to headers
@@ -52,10 +92,9 @@ const CategoryModal = ({ show, handleClose,refreshData }) => {
 
                 // Clear input fields
                 setCategory({
-                    name: "",
-                    type: "",
-                    titleHint: "",
-                    detailsHint: ""
+                    en: { name: "", type: "", titleHint: "", detailsHint: "" },
+                    gu: { name: "", type: "", titleHint: "", detailsHint: "" },
+                    hi: { name: "", type: "", titleHint: "", detailsHint: "" }
                 });
 
                 refreshData()
@@ -90,22 +129,55 @@ const CategoryModal = ({ show, handleClose,refreshData }) => {
                 <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">
                         <Form.Label>Category Name</Form.Label>
-                        <Form.Control type="text" name="name" value={category.name} onChange={handleChange} required />
+                        <Form.Control
+                            type="text"
+                            name="name"
+                            value={category[selectedLanguage].name}
+                            onChange={handleChange}
+                            required
+                        />
                     </Form.Group>
 
                     <Form.Group className="mb-3">
                         <Form.Label>Category Type</Form.Label>
-                        <Form.Control type="text" name="type" value={category.type} onChange={handleChange} required />
+                        <Form.Control
+                            type="text"
+                            name="type"
+                            value={category[selectedLanguage].type}
+                            onChange={handleChange}
+                            required
+                        />
                     </Form.Group>
 
                     <Form.Group className="mb-3">
                         <Form.Label>Title Hint</Form.Label>
-                        <Form.Control type="text" name="titleHint" value={category.titleHint} onChange={handleChange} required />
+                        <Form.Control
+                            type="text"
+                            name="titleHint"
+                            value={category[selectedLanguage].titleHint}
+                            onChange={handleChange}
+                            required
+                        />
                     </Form.Group>
 
                     <Form.Group className="mb-3">
                         <Form.Label>Details Hint</Form.Label>
-                        <Form.Control type="text" name="detailsHint" value={category.detailsHint} onChange={handleChange} required />
+                        <Form.Control
+                            type="text"
+                            name="detailsHint"
+                            value={category[selectedLanguage].detailsHint}
+                            onChange={handleChange}
+                            required
+                        />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Select Language</Form.Label>
+                        <Form.Select as="select" value={selectedLanguage} onChange={handleLanguageChange}>
+                            <option value="en">English</option>
+                            <option value="gu">ગુજરાતી</option>
+                            <option value="hi">हिंदी</option>
+                        </Form.Select>
                     </Form.Group>
 
                     <div className="flex justify-end">

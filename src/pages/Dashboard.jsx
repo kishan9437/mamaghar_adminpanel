@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react';
 
 // import { Stacked, Pie, Button, LineChart, SparkLine } from '../components';
 // eslint-disable-next-line no-unused-vars
-import { earningData, medicalproBranding, recentTransactions, weeklyStats, dropdownData, SparklineAreaData, ecomPieChartData } from '../data/dummy';
 import { MdOutlineSupervisorAccount } from 'react-icons/md';
 import { BsBoxSeam } from 'react-icons/bs';
 import { FiBarChart } from 'react-icons/fi';

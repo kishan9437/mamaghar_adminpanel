@@ -20,6 +20,7 @@ const Categories = () => {
     total: 0,
     totalPages: 1,
   });
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const navigate = useNavigate();
   const [editingCategory, setEditingCategory] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -44,7 +45,8 @@ const Categories = () => {
           search: searchTerm,
         },
         headers: {
-          'Authorization': `Bearer ${token}` // Add authorization header
+          'Authorization': `Bearer ${token}`, // Add authorization header
+          'Accept-Language': selectedLanguage,
         }
       });
 
@@ -111,12 +113,16 @@ const Categories = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update local state
-      setCategories(categories.map(cat =>
-        cat._id === categoryId ? response.data.data : cat
-      ));
-
-      alert('Category updated successfully');
+      if (response.data.success) {
+        setCategories((prevSubCategories) =>
+          prevSubCategories.map((sub) =>
+            sub.id === categoryId ? { ...sub, ...updatedData } : sub
+          )
+        );
+        alert('Category updated successfully');
+        return { success: true };
+      }
+      
       return true;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch categories');
@@ -129,7 +135,7 @@ const Categories = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, [pagination.page, pagination.limit, sortConfig, searchTerm]);
+  }, [pagination.page, pagination.limit, sortConfig, searchTerm, selectedLanguage]);
 
   return (
     <div className="m-1 mt-3 p-1">
@@ -143,9 +149,15 @@ const Categories = () => {
         </Button>
       </div>
 
-      <div className='flex gap-2'>
+      <div className='flex gap-2 mb-1'>
+        <Form.Select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} style={{ width: '150px' }}>
+          <option value="en">English</option>
+          <option value="gu">ગુજરાતી</option>
+          <option value="hi">हिंदी</option>
+        </Form.Select>
+
         {/* Search Bar */}
-        <InputGroup className="mb-1" style={{ width: '300px' }}>
+        <InputGroup className="mb-0" style={{ width: '300px' }}>
           <InputGroup.Text>🔍</InputGroup.Text>
           <Form.Control
             placeholder="Search categories..."
@@ -160,6 +172,7 @@ const Categories = () => {
         <Table striped bordered hover responsive className='pb-0'>
           <thead>
             <tr>
+              <th>No</th>
               <th
                 onClick={() => handleSort('name')}
                 style={{ cursor: 'pointer' }}
@@ -173,47 +186,48 @@ const Categories = () => {
                 Type {sortConfig.key === 'type' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
               </th>
               <th
-                onClick={() => handleSort('Title Hint')}
+                onClick={() => handleSort('titleHint')}
                 style={{ cursor: 'pointer' }}
               >
-                Title Hint {sortConfig.key === 'Title Hint' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                Title Hint {sortConfig.key === 'titleHint' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
               </th>
               <th
-                onClick={() => handleSort('Details Hint')}
+                onClick={() => handleSort('detailsHint')}
                 style={{ cursor: 'pointer' }}
               >
-                Details Hint {sortConfig.key === 'Details Hint' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                Details Hint {sortConfig.key === 'detailsHint' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
               </th>
-              <th
-                onClick={() => handleSort('createdAt')}
-                style={{ cursor: 'pointer' }}
-              >
-                Created At {sortConfig.key === 'createdAt' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-              </th>
+              {/* <th
+                  onClick={() => handleSort('createdAt')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Created At {sortConfig.key === 'createdAt' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                </th> */}
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="5" className="text-center py-4">Loading...</td>
+                <td colSpan="6" className="text-center py-4">Loading...</td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan="5" className="text-center text-danger py-4">{error}</td>
+                <td colSpan="6" className="text-center text-danger py-4">{error}</td>
               </tr>
             ) : categories.length === 0 ? (
               <tr>
-                <td colSpan="5" className="text-center py-4">No categories found</td>
+                <td colSpan="6" className="text-center py-4">No categories found</td>
               </tr>
             ) : (
-              categories.map(category => (
-                <tr key={category._id}>
+              categories.map((category, index) => (
+                <tr key={category.id}>
+                  <td>{(index + 1) + (pagination.page - 1) * pagination.limit}</td>
                   <td>{category.name}</td>
                   <td>{category.type}</td>
                   <td>{category.titleHint}</td>
                   <td>{category.detailsHint}</td>
-                  <td>{new Date(category.createdAt).toLocaleString()}</td>
+                  {/* <td>{new Date(category.createdAt).toLocaleString()}</td> */}
                   <td>
                     <Button
                       variant="warning"
@@ -229,7 +243,7 @@ const Categories = () => {
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={() => handleDelete(category._id)}
+                      onClick={() => handleDelete(category.id)}
                     >
                       Delete
                     </Button>
@@ -304,6 +318,7 @@ const Categories = () => {
           }}
           category={editingCategory}
           onUpdate={handleUpdate}
+          selectedLanguage={selectedLanguage}
         />
       )}
     </div>

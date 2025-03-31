@@ -4,12 +4,12 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 
-const Posts = () => {
-    const [posts, setPosts] = useState([]);
+const Users = () => {
+    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortConfig, setSortConfig] = useState({ key: 'title', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'desc' });
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
@@ -19,10 +19,9 @@ const Posts = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const navigate = useNavigate();
 
-    const fetchPosts = async () => {
+    const fetchUsers = async () => {
         try {
             setLoading(true);
-            // setError('');
             const { page, limit } = pagination;
 
             const token = localStorage.getItem('token');
@@ -31,7 +30,7 @@ const Posts = () => {
                 return;
             }
 
-            const response = await axios.get(`${API_BASE_URL}/posts`, {
+            const response = await axios.get(`${API_BASE_URL}/users`, {
                 params: {
                     page,
                     limit,
@@ -44,20 +43,19 @@ const Posts = () => {
                 }
             });
 
-            setPosts(response.data.data || []);
+            setUsers(response.data.data || []);
             setPagination(prev => ({
                 ...prev,
-                total: response.data.pagination?.totalPosts || 0,
+                total: response.data.pagination?.totalUsers || 0,
                 totalPages: response.data.pagination?.totalPages || 1,
             }));
         } catch (error) {
             console.error('Error fetching data:', error.response?.data?.message || error.message);
             if (error.response?.status === 401) {
                 alert('Session expired. Please log in again.');
-                navigate('/login'); // Redirect to login page
+                navigate('/login');
             }
-        }
-        finally {
+        } finally {
             setLoading(false);
         }
     };
@@ -78,19 +76,19 @@ const Posts = () => {
         setPagination(prev => ({ ...prev, page }));
     };
 
-    const handleDelete = async (postId) => {
-        if (!window.confirm('Are you sure you want to delete this post?')) return;
-        
+    const handleDelete = async (userId) => {
+        if (!window.confirm('Are you sure you want to delete this user?')) return;
+
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`${API_BASE_URL}/delete-posts/${postId}`, {
+            await axios.delete(`${API_BASE_URL}/delete-user/${userId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            fetchPosts();
-            alert('Post deleted successfully');
+            fetchUsers();
+            alert('User deleted successfully');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to delete post');
+            setError(err.response?.data?.message || 'Failed to delete user');
             if (err.response?.status === 401) {
                 alert('Session expired. Please log in again.');
                 navigate('/login');
@@ -99,83 +97,100 @@ const Posts = () => {
     };
 
     useEffect(() => {
-        fetchPosts();
+        fetchUsers();
     }, [pagination.page, pagination.limit, sortConfig, searchTerm]);
 
     return (
-        <div className="container mt-4">
-            <h3 className='mb-6'>Posts</h3>
+        <div className="m-1 mt-3 p-1">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className='text-2xl font-bold'>Users</h3>
+            </div>
 
             <div className='flex gap-2'>
                 <InputGroup className="mb-1" style={{ width: '300px' }}>
                     <InputGroup.Text>🔍</InputGroup.Text>
                     <Form.Control
-                        placeholder="Search posts..."
+                        placeholder="Search users..."
                         value={searchTerm}
                         onChange={handleSearch}
                     />
                 </InputGroup>
             </div>
 
-            {/* Posts Table */}
+            {/* Users Table */}
             <div className="overflow-x-auto">
                 <Table striped bordered hover responsive className='pb-0'>
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th onClick={() => handleSort('title')} style={{ cursor: 'pointer' }}>
-                                Title {sortConfig.key === 'title' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                                Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
                             </th>
-                            <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
-                                Price {sortConfig.key === 'price' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            <th onClick={() => handleSort('mobile')} style={{ cursor: 'pointer' }}>
+                                Mobile {sortConfig.key === 'mobile' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
                             </th>
-                            <th>Details</th>
-                            <th>Photo</th>
-                            {/* <th onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
-                                Created At {sortConfig.key === 'createdAt' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th> */}
+                            <th onClick={() => handleSort('address')} style={{ cursor: 'pointer' }}>
+                                Address {sortConfig.key === 'address' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            </th>
+                            <th onClick={() => handleSort('city')} style={{ cursor: 'pointer' }}>
+                                City {sortConfig.key === 'city' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            </th>
+                            <th onClick={() => handleSort('district')} style={{ cursor: 'pointer' }}>
+                                District {sortConfig.key === 'district' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            </th>
+                            <th onClick={() => handleSort('state')} style={{ cursor: 'pointer' }}>
+                                State {sortConfig.key === 'state' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            </th>
+                            <th onClick={() => handleSort('pinCode')} style={{ cursor: 'pointer' }}>
+                                PinCode {sortConfig.key === 'pinCode' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                            </th>
+                            <th>Profile</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="6" className="text-center py-4">Loading...</td>
+                                <td colSpan="9" className="text-center py-4">Loading...</td>
                             </tr>
                         ) : error ? (
                             <tr>
-                                <td colSpan="6" className="text-center text-danger py-4">{error}</td>
+                                <td colSpan="9" className="text-center text-danger py-4">{error}</td>
                             </tr>
-                        ) : posts.length === 0 ? (
+                        ) : users.length === 0 ? (
                             <tr>
-                                <td colSpan="6" className="text-center py-4">No posts found</td>
+                                <td colSpan="9" className="text-center py-4">No users found</td>
                             </tr>
                         ) : (
-                            posts.map((post, index) => (
-                                <tr key={post._id}>
-                                    <td>{(index+1)+(pagination.page-1) * (pagination.limit)}</td>
-                                    <td>{post.title}</td>
-                                    <td>{post.price}</td>
-                                    <td>{post.details}</td>
+                            users.map((user, index) => (
+                                <tr key={user._id}>
+                                    <td>{(index + 1) + (pagination.page - 1) * (pagination.limit)}</td>
+                                    <td>{user.name || 'N/A'}</td>
+                                    <td>{user.mobile || 'N/A'}</td>
+                                    <td>{user.address || 'N/A'}</td>
+                                    <td>{user.city || 'N/A'}</td>
+                                    <td>{user.district || 'N/A'}</td>
+                                    <td>{user.state || 'N/A'}</td>
+                                    <td>{user.pinCode || 'N/A'}</td>
                                     <td>
-                                        {post.photoUrls?.length > 0 ? (
+                                        {user.profilePicture ? (
                                             <Image
-                                                src={post.photoUrls[0]}
-                                                alt="Post"
+                                                src={user.profilePicture}
+                                                alt="profilePic"
                                                 width={50}
                                                 height={50}
                                                 style={{ cursor: 'pointer' }}
-                                                onClick={() => setSelectedImage(post.photoUrls[0])}
-                                                rounded
+                                                onClick={() => setSelectedImage(user.profilePicture)}
+                                                roundedCircle
                                             />
                                         ) : "No Image"}
                                     </td>
-                                    {/* <td>{new Date(post.createdAt).toLocaleString()}</td> */}
                                     <td>
                                         <Button
                                             variant="danger"
                                             size="sm"
-                                            onClick={() => handleDelete(post._id)}
+                                            onClick={() => handleDelete(user._id)}
+                                            disabled={user.role === 'admin'} // Prevent deleting admin users
                                         >
                                             Delete
                                         </Button>
@@ -187,7 +202,6 @@ const Posts = () => {
                 </Table>
             </div>
 
-            {/* Pagination */}
             {/* Pagination */}
             <div className='flex justify-between items-center'>
                 <Pagination className='mb-0'>
@@ -248,4 +262,4 @@ const Posts = () => {
     );
 };
 
-export default Posts;
+export default Users;

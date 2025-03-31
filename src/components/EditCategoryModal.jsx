@@ -1,33 +1,42 @@
 import { useEffect, useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 
-const EditCategoryModal = ({ show, handleClose, category, onUpdate }) => {
+const EditCategoryModal = ({ show, handleClose, category, onUpdate, selectedLanguage }) => {
     const [formData, setFormData] = useState({
         name: '',
         type: '',
         titleHint: '',
         detailsHint: ''
     });
+    const [language, setLanguage] = useState(selectedLanguage || 'en'); // Default English
 
     // Update form data when category changes
     useEffect(() => {
         if (category) {
             setFormData({
-                name: category.name,
-                type: category.type,
-                titleHint: category.titleHint,
-                detailsHint: category.detailsHint
+                name: category.languages?.[language]?.name || category.name || '',
+                type: category.languages?.[language]?.type || category.type || '',
+                titleHint: category.languages?.[language]?.titleHint || category.titleHint || '',
+                detailsHint: category.languages?.[language]?.detailsHint || category.detailsHint || ''
             });
         }
-    }, [category]);
+    }, [category, language]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async () => {
+        const updatedData = {
+            name: formData.name,
+            type: formData.type,
+            titleHint: formData.titleHint,
+            detailsHint: formData.detailsHint,
+            language: language  // 👈 Language pass karo
+        };
+
         try {
-            await onUpdate(category._id, formData);
+            await onUpdate(category.id, updatedData);
             handleClose();
         } catch (error) {
             console.error('Update failed:', error);

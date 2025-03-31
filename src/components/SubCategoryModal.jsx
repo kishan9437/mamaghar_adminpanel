@@ -4,7 +4,12 @@ import { Modal, Button, Form, Spinner, Alert } from "react-bootstrap";
 import axios from "axios";
 import API_BASE_URL from "../config";
 
-const SubCategoryModal = ({ show, handleClose,refreshData }) => {
+const SubCategoryModal = ({ show, handleClose, refreshData }) => {
+    const [subcategory, setSubcategory] = useState({
+        en: { name: "", description: "" },
+        gu: { name: "", description: "" },
+        hi: { name: "", description: "" }
+    });
     const [name, setName] = useState("");
     const [categoryId, setCategoryId] = useState("");
     const [description, setDescription] = useState("");
@@ -12,6 +17,7 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
+    const [selectedLanguage, setSelectedLanguage] = useState("en");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,6 +35,21 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
         }
     }, [show]);
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setSubcategory({
+            ...subcategory,
+            [selectedLanguage]: {
+                ...subcategory[selectedLanguage],
+                [name]: value
+            }
+        });
+    };
+
+    const handleLanguageChange = (e) => {
+        setSelectedLanguage(e.target.value);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -43,9 +64,30 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
                 return;
             }
 
+            const requestData = {
+                name: subcategory.en.name || "", // Ensure English name
+                description: subcategory.en.description || "",
+                categoryId, // Ensure categoryId is included
+                languages: {
+                    en: {
+                        name: subcategory.en.name || "",
+                        description: subcategory.en.description || "",
+                    },
+                    gu: {
+                        name: subcategory.gu.name || "",
+                        description: subcategory.gu.description || "",
+                    },
+                    hi: {
+                        name: subcategory.hi.name || "",
+                        description: subcategory.hi.description || "",
+                    }
+                }
+            };
+
             const response = await axios.post(
                 `${API_BASE_URL}/post-subcategory`,
-                { name, categoryId, description },
+                // { name, categoryId, description },
+                requestData,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`, // Add token to headers
@@ -60,9 +102,12 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
                 setMessage(null); // Reset message after closing modal
 
                 // Clear input fields
-                setName("");
+                setSubcategory({
+                    en: { name: "", description: "" },
+                    gu: { name: "", description: "" },
+                    hi: { name: "", description: "" }
+                });
                 setCategoryId("");
-                setDescription("");
 
                 refreshData();
             }, 2000);
@@ -105,7 +150,7 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
                             <option value="">Select Category</option>
                             {categories.map((category) => (
                                 <option key={category._id} value={category._id}>
-                                    {category.name}
+                                    {category.languages[selectedLanguage]?.name || category.languages.en.name}
                                 </option>
                             ))}
                         </Form.Select>
@@ -115,8 +160,9 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
                         <Form.Label>Subcategory Name:</Form.Label>
                         <Form.Control
                             type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            name="name"
+                            value={subcategory[selectedLanguage].name}
+                            onChange={handleChange}
                             required
                         />
                     </Form.Group>
@@ -125,9 +171,20 @@ const SubCategoryModal = ({ show, handleClose,refreshData }) => {
                         <Form.Label>Description:</Form.Label>
                         <Form.Control
                             as="textarea"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            name="description"
+                            value={subcategory[selectedLanguage].description}
+                            onChange={handleChange}
+                            required
                         />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Select Language</Form.Label>
+                        <Form.Select value={selectedLanguage} onChange={handleLanguageChange}>
+                            <option value="en">English</option>
+                            <option value="gu">ગુજરાતી</option>
+                            <option value="hi">हिंदी</option>
+                        </Form.Select>
                     </Form.Group>
 
                     <div className="flex justify-end space-x-2">

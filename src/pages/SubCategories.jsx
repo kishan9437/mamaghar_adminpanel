@@ -26,6 +26,7 @@ const SubCategories = () => {
   const navigate = useNavigate();
   const [editingSubCategory, setEditingSubCategory] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
 
   // Fetch sub-categories from API
   const fetchSubCategories = async () => {
@@ -44,6 +45,7 @@ const SubCategories = () => {
         },
         headers: {
           Authorization: `Bearer ${token}`,
+          'Accept-Language': selectedLanguage,
         },
       });
 
@@ -114,11 +116,17 @@ const SubCategories = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setSubCategories(subCategories.map(sc =>
-        sc._id === subCategoryId ? response.data.data : sc
-      ));
+      if (response.data.success) {
+        // 🔥 Update Table Immediately Without Refresh
+        setSubCategories((prevSubCategories) =>
+          prevSubCategories.map((sub) =>
+            sub.id === subCategoryId ? { ...sub, ...updatedData } : sub
+          )
+        );
+        alert('Subcategory updated successfully');
+        return { success: true };
+      }
 
-      alert('Subcategory updated successfully');
       return true;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch subcategories');
@@ -132,7 +140,7 @@ const SubCategories = () => {
   // Fetch data when dependencies change
   useEffect(() => {
     fetchSubCategories();
-  }, [pagination.page, pagination.limit, sortConfig, searchTerm]);
+  }, [pagination.page, pagination.limit, sortConfig, searchTerm, selectedLanguage]);
 
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
@@ -146,9 +154,15 @@ const SubCategories = () => {
         </Button>
       </div>
 
-      <div className='flex gap-2'>
+      <div className='flex gap-2 mb-1'>
+        <Form.Select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} style={{ width: '150px' }}>
+          <option value="en">English</option>
+          <option value="gu">ગુજરાતી</option>
+          <option value="hi">हिंदी</option>
+        </Form.Select>
+
         {/* Search Bar */}
-        <InputGroup className="mb-1" style={{ width: '300px' }}>
+        <InputGroup style={{ width: '300px' }}>
           <InputGroup.Text>🔍</InputGroup.Text>
           <Form.Control
             placeholder="Search sub-categories..."
@@ -163,6 +177,7 @@ const SubCategories = () => {
         <Table striped bordered hover responsive>
           <thead>
             <tr>
+              <th>No</th>
               <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
                 Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
               </th>
@@ -172,32 +187,33 @@ const SubCategories = () => {
               <th onClick={() => handleSort('description')} style={{ cursor: 'pointer' }}>
                 Description {sortConfig.key === 'description' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
               </th>
-              <th onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
+              {/* <th onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
                 Created At {sortConfig.key === 'createdAt' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-              </th>
+              </th> */}
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="4" className="text-center py-4">Loading...</td>
+                <td colSpan="5" className="text-center py-4">Loading...</td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan="4" className="text-center text-danger py-4">{error}</td>
+                <td colSpan="5" className="text-center text-danger py-4">{error}</td>
               </tr>
             ) : subCategories.length === 0 ? (
               <tr>
-                <td colSpan="4" className="text-center py-4">No categories found</td>
+                <td colSpan="5" className="text-center py-4">No categories found</td>
               </tr>
             ) : (
-              subCategories.map((subCat) => (
+              subCategories.map((subCat, index) => (
                 <tr key={subCat._id}>
+                  <td>{(index + 1) + (pagination.page - 1) * (pagination.limit)}</td>
                   <td>{subCat.name}</td>
-                  <td>{subCat.categoryId?.name}</td>
+                  <td>{subCat.categoryName}</td>
                   <td>{subCat.description}</td>
-                  <td>{new Date(subCat.createdAt).toLocaleString()}</td>
+                  {/* <td>{new Date(subCat.createdAt).toLocaleString()}</td> */}
                   <td>
                     <Button
                       variant="warning"
@@ -213,7 +229,7 @@ const SubCategories = () => {
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={() => handleDelete(subCat._id)}
+                      onClick={() => handleDelete(subCat.id)}
                     >
                       Delete
                     </Button>
@@ -281,7 +297,8 @@ const SubCategories = () => {
           }}
           subCategory={editingSubCategory}
           onUpdate={handleUpdateSubCategory}
-          categories={subCategories}
+          // categories={subCategories}
+          selectedLanguage={selectedLanguage}
         />)}
     </div>
   );
