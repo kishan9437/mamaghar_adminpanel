@@ -14,13 +14,6 @@ import { useStateContext } from '../contexts/ContextProvider';
 import API_BASE_URL from '../config';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-// import product9 from '../data/product9.jpg';
-
-// const DropDown = ({ currentMode }) => (
-//   <div className="w-28 border-1 border-color px-2 py-1 rounded-md">
-//     <DropDownListComponent id="time" fields={{ text: 'Time', value: 'Id' }} style={{ border: 'none', color: (currentMode === 'Dark') && 'white' }} value="1" dataSource={dropdownData} popupHeight="220px" popupWidth="120px" />
-//   </div>
-// );
 
 const Dashboard = () => {
   // eslint-disable-next-line no-unused-vars
@@ -28,6 +21,7 @@ const Dashboard = () => {
   const [totalCount, setTotalCount] = useState({});
   const navigate = useNavigate();
 
+  console.log(currentMode)
   const fetchCouts = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -94,11 +88,15 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="mt-2">
+    <div className={`mt-2 ${currentMode === 'Dark' ? 'dark' : ''}`}>
       <div className="flex flex-wrap lg:flex-nowrap justify-center ">
         <div className="flex m-3 flex-wrap justify-between gap-1 items-center w-100">
           {earningData.map((item) => (
-            <div key={item.title} className="bg-white lg:w-60 h-44 dark:text-gray-200 dark:bg-secondary-dark-bg md:w-56 p-4 pt-9 rounded-2xl shadow-md">
+            <div
+              key={item.title}
+              className={`${currentMode === 'Dark' ? 'dark:bg-secondary-dark-bg dark:text-gray-200' : 'bg-white'
+                } lg:w-60 h-44 md:w-56 p-4 pt-9 rounded-2xl shadow-md`}
+            >
               <button
                 type="button"
                 style={{ color: item.iconColor, backgroundColor: item.iconBg }}

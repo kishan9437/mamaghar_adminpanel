@@ -6,6 +6,8 @@ import { Navbar, Sidebar, ThemeSettings } from '../components';
 import { Dashboard, Posts, Categories, SubCategories } from '../pages';
 import { useStateContext } from '../contexts/ContextProvider';
 import Users from '../pages/Users';
+import UserPost from '../pages/UserPost';
+import UserQuestion from '../pages/UserQuestion';
 
 const DashboardRoutes = () => {
   const { setCurrentColor, setCurrentMode, currentMode, activeMenu, currentColor, themeSettings, setThemeSettings } = useStateContext();
@@ -65,6 +67,8 @@ const DashboardRoutes = () => {
 
               {/* pages  */}
               <Route path="users" element={(<Users />)} />
+              <Route path="/user-posts/:userId" element={<UserPost />} />
+              <Route path="/user-questions/:userId" element={<UserQuestion />} />
               <Route path="categories" element={<Categories />} />
               <Route path="subcategories" element={<SubCategories />} />
               <Route path="posts" element={<Posts />} />

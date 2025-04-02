@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Pagination, Modal, Form, InputGroup, Button, Image } from 'react-bootstrap';
+import { Table, Pagination, Modal, Form, InputGroup, Button, Image, Dropdown } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
+import EditUserModal from '../components/EditUserModal';
+import UserReportModal from '../components/UserReportModal';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -10,14 +12,27 @@ const Users = () => {
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'desc' });
+    const [selectedImage, setSelectedImage] = useState(null);
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
         total: 0,
         totalPages: 1,
     });
-    const [selectedImage, setSelectedImage] = useState(null);
+    const [states, setStates] = useState([]);
+    const [selectedState, setSelectedState] = useState("");
+    const [district, setDistrict] = useState([]);
+    const [selectedDistrict, setSelectedDistrict] = useState("");
+    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [modalShow, setModalShow] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
     const navigate = useNavigate();
+
+    const handleShowReports = (userId) => {
+        setSelectedUserId(userId);
+        setModalShow(true);
+    };
 
     const fetchUsers = async () => {
         try {
@@ -37,6 +52,8 @@ const Users = () => {
                     sortBy: sortConfig.key,
                     sortOrder: sortConfig.direction,
                     search: searchTerm,
+                    state: selectedState,
+                    district: selectedDistrict
                 },
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -60,9 +77,38 @@ const Users = () => {
         }
     };
 
+    const fetchStates = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/states`);
+
+            setStates(response.data.data || []);
+        } catch (error) {
+            console.error('Error fetching states:', error.response?.data?.message || error.message);
+        }
+    };
+
+    const fetchDistrict = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/district`);
+            setDistrict(response.data.data || []);
+        } catch (error) {
+            console.error('Error fetching states:', error.response?.data?.message || error.message);
+        }
+    };
+
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
         setPagination(prev => ({ ...prev, page: 1 }));
+    };
+
+    const handleStateChange = (e) => {
+        setSelectedState(e.target.value);
+        setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    };
+
+    const handleDistrictChange = (e) => {
+        setSelectedDistrict(e.target.value);
+        setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
     };
 
     const handleSort = (key) => {
@@ -96,9 +142,22 @@ const Users = () => {
         }
     };
 
+    const handleBlockUser = async (userId) => {
+        if (!window.confirm('Are you sure you want to block this user?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`${API_BASE_URL}/block-user/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            fetchUsers();
+            alert('User blocked successfully');
+        } catch (error) {
+            console.error('Error blocking user:', error);
+        }
+    };
     useEffect(() => {
+        fetchStates();
+        fetchDistrict();
         fetchUsers();
-    }, [pagination.page, pagination.limit, sortConfig, searchTerm]);
+    }, [pagination.page, pagination.limit, sortConfig, searchTerm, selectedState, selectedDistrict]);
 
     return (
         <div className="m-1 mt-3 p-1">
@@ -115,92 +174,151 @@ const Users = () => {
                         onChange={handleSearch}
                     />
                 </InputGroup>
+                <Form.Select className='mb-1' style={{ width: '150px' }} value={selectedState} onChange={handleStateChange}>
+                    <option value="">Select State</option>
+                    {states.map((state, index) => (
+                        <option key={index} value={state}>{state}</option>
+                    ))}
+                </Form.Select>
+                <Form.Select className='mb-1' style={{ width: '150px' }} value={selectedDistrict} onChange={handleDistrictChange}>
+                    <option value="">Select District</option>
+                    {district.map((district, index) => (
+                        <option key={index} value={district}>{district}</option>
+                    ))}
+                </Form.Select>
             </div>
 
             {/* Users Table */}
-            <div className="overflow-x-auto">
-                <Table striped bordered hover responsive className='pb-0'>
-                    <thead>
+            {/* <div className="overflow-x-auto"> */}
+            <Table striped bordered hover responsive className='pb-0'>
+                <thead>
+                    <tr>
+                        <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                            Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
+                        </th>
+                        <th>Total Posts</th>
+                        <th>Total Questions</th>
+                        <th>Last Action</th>
+                        <th>Reports</th>
+                        {/* <th>Status</th> */}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {loading ? (
                         <tr>
-                            <th>No</th>
-                            <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
-                                Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th onClick={() => handleSort('mobile')} style={{ cursor: 'pointer' }}>
-                                Mobile {sortConfig.key === 'mobile' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th onClick={() => handleSort('address')} style={{ cursor: 'pointer' }}>
-                                Address {sortConfig.key === 'address' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th onClick={() => handleSort('city')} style={{ cursor: 'pointer' }}>
-                                City {sortConfig.key === 'city' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th onClick={() => handleSort('district')} style={{ cursor: 'pointer' }}>
-                                District {sortConfig.key === 'district' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th onClick={() => handleSort('state')} style={{ cursor: 'pointer' }}>
-                                State {sortConfig.key === 'state' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th onClick={() => handleSort('pinCode')} style={{ cursor: 'pointer' }}>
-                                PinCode {sortConfig.key === 'pinCode' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-                            </th>
-                            <th>Profile</th>
-                            <th>Actions</th>
+                            <td colSpan="7" className="text-center py-4">Loading...</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan="9" className="text-center py-4">Loading...</td>
-                            </tr>
-                        ) : error ? (
-                            <tr>
-                                <td colSpan="9" className="text-center text-danger py-4">{error}</td>
-                            </tr>
-                        ) : users.length === 0 ? (
-                            <tr>
-                                <td colSpan="9" className="text-center py-4">No users found</td>
-                            </tr>
-                        ) : (
-                            users.map((user, index) => (
-                                <tr key={user._id}>
-                                    <td>{(index + 1) + (pagination.page - 1) * (pagination.limit)}</td>
-                                    <td>{user.name || 'N/A'}</td>
-                                    <td>{user.mobile || 'N/A'}</td>
-                                    <td>{user.address || 'N/A'}</td>
-                                    <td>{user.city || 'N/A'}</td>
-                                    <td>{user.district || 'N/A'}</td>
-                                    <td>{user.state || 'N/A'}</td>
-                                    <td>{user.pinCode || 'N/A'}</td>
-                                    <td>
-                                        {user.profilePicture ? (
+                    ) : error ? (
+                        <tr>
+                            <td colSpan="7" className="text-center text-danger py-4">{error}</td>
+                        </tr>
+                    ) : users.length === 0 ? (
+                        <tr>
+                            <td colSpan="7" className="text-center py-4">No users found</td>
+                        </tr>
+                    ) : (
+                        users.map((user, index) => (
+                            <tr key={user._id}>
+                                <td>
+                                    <div className='flex items-center'>
+                                        <div className='flex flex-col'>
                                             <Image
-                                                src={user.profilePicture}
-                                                alt="profilePic"
-                                                width={50}
-                                                height={50}
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => setSelectedImage(user.profilePicture)}
+                                                src={user.profilePi || '/mamaGhar.png'}
+                                                width={40}
+                                                height={40}
                                                 roundedCircle
                                             />
-                                        ) : "No Image"}
-                                    </td>
-                                    <td>
-                                        <Button
-                                            variant="danger"
-                                            size="sm"
-                                            onClick={() => handleDelete(user._id)}
-                                            disabled={user.role === 'admin'} // Prevent deleting admin users
-                                        >
-                                            Delete
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </Table>
-            </div>
+                                        </div>
+                                        <div className='ml-2'>
+                                            <span className=''>{user.name}</span>
+                                            <div className="flex items-center">
+                                                <span className="text-gray-500 text-sm">
+                                                    {[
+                                                        user.state || 'N/A',
+                                                        user.district || 'N/A',
+                                                        user.address || 'N/A'
+                                                    ].filter(Boolean).join(', ')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td
+                                    className="cursor-pointer"
+                                    onClick={() => {
+                                        if (user.totalPosts > 0) {
+                                            window.open(`${window.location.origin}/user-posts/${user._id}`, '_blank', 'noopener,noreferrer');
+                                        } else {
+                                            alert('This user has not created any posts yet.');
+                                        }
+                                    }}
+                                >
+                                    {user.totalPosts > 0 ? (
+                                        <span className="no-underline text-black">{user.totalPosts}</span>
+                                    ) : (
+                                        <span className="text-gray-500">{user.totalPosts}</span>
+                                    )}
+                                </td>
+                                <td
+                                    className="cursor-pointer"
+                                    onClick={() => {
+                                        if (user.totalQuestions > 0) {
+                                            window.open(`${window.location.origin}/user-questions/${user._id}`, '_blank', 'noopener,noreferrer');
+                                        } else {
+                                            alert('This user has not created any question yet.');
+                                        }
+                                    }}
+                                >
+                                    {user.totalQuestions > 0 ? (
+                                        <span className="no-underline text-black">{user.totalQuestions}</span>
+                                    ) : (
+                                        <span className="text-gray-500">{user.totalQuestions}</span>
+                                    )}
+                                </td>
+                                <td>{user.lastAction?.type || 'N/A'}</td>
+                                <td><Button
+                                    variant="info"
+                                    size="sm"
+                                    onClick={() => handleShowReports(user._id)}
+                                >
+                                    View
+                                </Button></td>
+                                {/* <td>{user.status}</td> */}
+                                <td>
+                                    {/* <Dropdown>
+                                        <Dropdown.Toggle variant="secondary" size="sm">Actions</Dropdown.Toggle>
+                                        <Dropdown.Menu>
+                                            <Dropdown.Item href={`/edit-user/${user._id}`}>Edit</Dropdown.Item>
+                                            <Dropdown.Item onClick={() => handleBlockUser(user._id)}>Block</Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown> */}
+                                    <Button
+                                        variant="warning"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setShowEditModal(true);
+                                        }}
+                                        className="me-2"
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => handleDelete(user._id)}
+                                        disabled={user.role === 'admin'} // Prevent deleting admin users
+                                    >
+                                        Delete
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </Table>
+            {/* </div> */}
 
             {/* Pagination */}
             <div className='flex justify-between items-center'>
@@ -258,6 +376,21 @@ const Users = () => {
                     <Image src={selectedImage} alt="Full Size" fluid />
                 </Modal.Body>
             </Modal>
+
+            {/* Edit Modal */}
+            <EditUserModal
+                show={showEditModal}
+                handleClose={() => setShowEditModal(false)}
+                userData={selectedUser}
+                refreshUsers={fetchUsers}
+            />
+
+            {/* Report Modal */}
+            <UserReportModal
+                show={modalShow}
+                userId={selectedUserId}
+                onHide={() => setModalShow(false)}
+            />
         </div>
     );
 };
