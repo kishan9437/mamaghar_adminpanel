@@ -20,7 +20,7 @@ const UserPost = () => {
                     console.error("No authentication token found.");
                     return;
                 }
-                const response = await axios.get(`${API_BASE_URL}/postbyuser/${userId}`);
+                const response = await axios.get(`${API_BASE_URL}/api/postbyuser/${userId}`);
                 setPosts(response.data.data || []);
             } catch (err) {
                 console.error('Error fetching data:', error.response?.data?.message || error.message);
@@ -60,9 +60,13 @@ const UserPost = () => {
                     <div key={post._id} className="post-card">
                         {post.photoUrls && post.photoUrls.length > 0 && (
                             <img
-                                src={post.photoUrls[0] || '/mamaGhar.png'}
+                                src={`${API_BASE_URL}${post.photoUrls[0]}`}
                                 alt={post.title}
                                 className="post-image"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/mamaGhar.png';
+                                }}
                             />
                         )}
                         <div className="post-content">

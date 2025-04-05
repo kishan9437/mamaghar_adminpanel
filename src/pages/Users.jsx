@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Pagination, Modal, Form, InputGroup, Button, Image, Dropdown } from 'react-bootstrap';
+import { Table, Pagination, Modal, Form, InputGroup, Button, Image, Dropdown, Badge } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
@@ -29,7 +29,11 @@ const Users = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const navigate = useNavigate();
 
-    const handleShowReports = (userId) => {
+    const handleShowReports = (userId, reports = { total: 0, reasons: [] }) => {
+        if (!reports || reports.total === 0) {
+            alert('This user has no reports yet.');
+            return;
+        }
         setSelectedUserId(userId);
         setModalShow(true);
     };
@@ -45,7 +49,7 @@ const Users = () => {
                 return;
             }
 
-            const response = await axios.get(`${API_BASE_URL}/users`, {
+            const response = await axios.get(`${API_BASE_URL}/api/users`, {
                 params: {
                     page,
                     limit,
@@ -79,7 +83,7 @@ const Users = () => {
 
     const fetchStates = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/states`);
+            const response = await axios.get(`${API_BASE_URL}/api/states`);
 
             setStates(response.data.data || []);
         } catch (error) {
@@ -89,7 +93,7 @@ const Users = () => {
 
     const fetchDistrict = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/district`);
+            const response = await axios.get(`${API_BASE_URL}/api/district`);
             setDistrict(response.data.data || []);
         } catch (error) {
             console.error('Error fetching states:', error.response?.data?.message || error.message);
@@ -153,6 +157,8 @@ const Users = () => {
             console.error('Error blocking user:', error);
         }
     };
+
+
     useEffect(() => {
         fetchStates();
         fetchDistrict();
@@ -224,11 +230,17 @@ const Users = () => {
                                     <div className='flex items-center'>
                                         <div className='flex flex-col'>
                                             <Image
-                                                src={user.profilePi || '/mamaGhar.png'}
+                                                src={`${API_BASE_URL}${user.profilePic}`}
+                                                alt={user.name}
                                                 width={40}
                                                 height={40}
                                                 roundedCircle
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '/mamaGhar.png';
+                                                }}
                                             />
+                                            
                                         </div>
                                         <div className='ml-2'>
                                             <span className=''>{user.name}</span>
@@ -277,13 +289,21 @@ const Users = () => {
                                     )}
                                 </td>
                                 <td>{user.lastAction?.type || 'N/A'}</td>
-                                <td><Button
-                                    variant="info"
-                                    size="sm"
-                                    onClick={() => handleShowReports(user._id)}
-                                >
-                                    View
-                                </Button></td>
+                                <td>
+                                    <div className="d-flex align-items-center">
+                                        <Button
+                                            variant={user.reports?.total > 0 ? "info" : "info"}
+                                            size="sm"
+                                            onClick={() => handleShowReports(user._id, user.reports)}
+                                        // disabled={!user.reports?.total}
+                                        >
+                                            View
+                                        </Button>
+                                        <Badge bg={user.reports?.total > 0 ? "danger" : "danger"} className="ml-2">
+                                            {user.reports?.total || 0}
+                                        </Badge>
+                                    </div>
+                                </td>
                                 {/* <td>{user.status}</td> */}
                                 <td>
                                     {/* <Dropdown>

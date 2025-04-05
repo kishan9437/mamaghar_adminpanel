@@ -13,7 +13,7 @@ const UserQuestion = () => {
     useEffect(() => {
         const fetchUserQuestions = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}/questionbyuser/${userId}`);
+                const response = await axios.get(`${API_BASE_URL}/api/questionbyuser/${userId}`);
                 setQuestions(response.data.data || []);
             } catch (err) {
                 setError(err.response?.data?.message || err.message);
@@ -54,9 +54,13 @@ const UserQuestion = () => {
                         <div key={question._id} className="bg-white rounded-xl overflow-hidden transition-transform duration-300 hover:-translate-y-1 shadow-md">
                             <div className="flex items-center p-4 bg-gray-50 border-b border-gray-200">
                                 <img
-                                    src={question.userId.profilePicUrl || '/mamaGhar.png'}
+                                    src={`${API_BASE_URL}${question.userId.profilePicUrl}`}
                                     alt={question.userId.name}
                                     className="w-12 h-12 rounded-full object-cover mr-3"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = '/mamaGhar.png';
+                                    }}
                                 />
                                 <div className="font-medium text-gray-900 m-0">
                                     <h4 className='mb-0'>{question.userId.name}</h4>
@@ -74,9 +78,13 @@ const UserQuestion = () => {
                                         {question.photoUrls.map((url, index) => (
                                             <img
                                                 key={index}
-                                                src={url || '/mamaGhar.png'}
+                                                src={`${API_BASE_URL}${url}`}
                                                 alt={`Question ${index + 1}`}
                                                 className="w-full rounded-lg max-h-80 object-contain"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '/mamaGhar.png';
+                                                }}
                                             />
                                         ))}
                                     </div>

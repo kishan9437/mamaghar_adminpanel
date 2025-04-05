@@ -46,7 +46,7 @@ function EditUserModal({ show, handleClose, userData, refreshUsers }) {
             }
 
             const response = await axios.put(
-                `${API_BASE_URL}/users/${userData._id}`,
+                `${API_BASE_URL}/api/users/${userData._id}`,
                 formData,
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -96,21 +96,21 @@ function EditUserModal({ show, handleClose, userData, refreshUsers }) {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>City</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                        />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
                         <Form.Label>District</Form.Label>
                         <Form.Control
                             type="text"
                             name="district"
                             value={formData.district}
+                            onChange={handleChange}
+                        />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>City</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="city"
+                            value={formData.city}
                             onChange={handleChange}
                         />
                     </Form.Group>

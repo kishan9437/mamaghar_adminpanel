@@ -19,7 +19,7 @@ function UserReportModal({ show, userId,onHide }) {
             setLoading(true);
             setError(null);
             const token = localStorage.getItem("token");
-            const response = await axios.get(`${API_BASE_URL}/userbypostreport/${userId}`, {
+            const response = await axios.get(`${API_BASE_URL}/api/userbypostreport/${userId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setReports(response.data.data);
@@ -57,9 +57,13 @@ function UserReportModal({ show, userId,onHide }) {
                                         <div className="flex items-center space-x-2">
                                             {report.reporterId?.profilePic && (
                                                 <img
-                                                    src={report.reporterId.profilePic || "./mamaGhar.png"}
+                                                    src={`${API_BASE_URL}${report.reporterId.profilePic}`}
                                                     alt="Reporter"
                                                     className="w-8 h-8 rounded-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = '/mamaGhar.png';
+                                                    }}
                                                 />
                                             )}
                                             <div className="flex flex-col">

@@ -31,7 +31,7 @@ const Posts = () => {
                 return;
             }
 
-            const response = await axios.get(`${API_BASE_URL}/posts`, {
+            const response = await axios.get(`${API_BASE_URL}/api/posts`, {
                 params: {
                     page,
                     limit,
@@ -83,7 +83,7 @@ const Posts = () => {
         
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`${API_BASE_URL}/delete-posts/${postId}`, {
+            await axios.delete(`${API_BASE_URL}/api/delete-posts/${postId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

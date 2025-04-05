@@ -3,11 +3,14 @@ import { Routes, Route } from 'react-router-dom';
 import { FiSettings } from 'react-icons/fi';
 import { Tooltip } from 'react-tooltip'; // ✅ Import react-tooltip
 import { Navbar, Sidebar, ThemeSettings } from '../components';
-import { Dashboard, Posts, Categories, SubCategories } from '../pages';
+import { Dashboard, Posts, Categories } from '../pages';
 import { useStateContext } from '../contexts/ContextProvider';
 import Users from '../pages/Users';
 import UserPost from '../pages/UserPost';
 import UserQuestion from '../pages/UserQuestion';
+import State from '../pages/State';
+import District from '../pages/District';
+import City from '../pages/City';
 
 const DashboardRoutes = () => {
   const { setCurrentColor, setCurrentMode, currentMode, activeMenu, currentColor, themeSettings, setThemeSettings } = useStateContext();
@@ -69,9 +72,11 @@ const DashboardRoutes = () => {
               <Route path="users" element={(<Users />)} />
               <Route path="/user-posts/:userId" element={<UserPost />} />
               <Route path="/user-questions/:userId" element={<UserQuestion />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="subcategories" element={<SubCategories />} />
               <Route path="posts" element={<Posts />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="state" element={<State />} />
+              <Route path="district" element={<District />} />
+              <Route path="city" element={<City />} />
             </Routes>
           </div>
           {/* <Footer /> */}

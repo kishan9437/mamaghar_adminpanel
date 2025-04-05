@@ -1,11 +1,8 @@
 import React from 'react';
-import { AiOutlineShoppingCart, AiOutlineBarChart, AiOutlineStock } from 'react-icons/ai';
-import { FiShoppingBag, FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
-import { BsCurrencyDollar, BsShield, BsChatLeft } from 'react-icons/bs';
+import { FiShoppingBag } from 'react-icons/fi';
+import { BiSolidCategory } from "react-icons/bi";
 import { RiUserShared2Fill } from "react-icons/ri";
-import { IoMdContacts } from 'react-icons/io';
-import { RiContactsLine } from 'react-icons/ri';
-import { TiTick } from 'react-icons/ti';
+import { MdOutlinePostAdd } from "react-icons/md";
 import { GrLocation } from 'react-icons/gr';
 import avatar from './avatar.jpg';
 import avatar2 from './avatar2.jpg';
@@ -219,17 +216,14 @@ export const links = [
         icon: <RiUserShared2Fill />,
       },
       {
-        name: 'categories',
-        icon: <AiOutlineShoppingCart />,
-      },
-      {
-        name: 'subcategories',
-        icon: <IoMdContacts />,
-      },
-      {
         name: 'posts',
-        icon: <RiContactsLine />,
+        icon: <MdOutlinePostAdd />,
       },
+      {
+        name: 'categories',
+        icon: <BiSolidCategory />,
+      },
+      
     ],
   }
 ];

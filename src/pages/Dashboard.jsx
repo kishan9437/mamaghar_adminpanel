@@ -1,15 +1,8 @@
 import React, { useEffect, useState } from 'react';
-// import { BsCurrencyDollar } from 'react-icons/bs';
-// import { GoPrimitiveDot } from 'react-icons/go';
-// import { IoIosMore } from 'react-icons/io';
-// import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
-
-// import { Stacked, Pie, Button, LineChart, SparkLine } from '../components';
-// eslint-disable-next-line no-unused-vars
-import { MdOutlineSupervisorAccount } from 'react-icons/md';
-import { BsBoxSeam } from 'react-icons/bs';
+import { BiSolidCategory } from "react-icons/bi";
+import { MdOutlinePostAdd } from "react-icons/md";
+import { RiUserShared2Fill } from "react-icons/ri";
 import { FiBarChart } from 'react-icons/fi';
-import { HiOutlineRefresh } from 'react-icons/hi';
 import { useStateContext } from '../contexts/ContextProvider';
 import API_BASE_URL from '../config';
 import axios from 'axios';
@@ -30,7 +23,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/counts`, {
+      const response = await axios.get(`${API_BASE_URL}/api/counts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -50,18 +43,16 @@ const Dashboard = () => {
 
   const earningData = [
     {
-      icon: <MdOutlineSupervisorAccount />,
+      icon: <RiUserShared2Fill />,
       amount: totalCount.users || 0,
-      percentage: '-4%',
       title: 'Users',
       iconColor: '#03C9D7',
       iconBg: '#E5FAFB',
       pcColor: 'red-600',
     },
     {
-      icon: <BsBoxSeam />,
+      icon: <BiSolidCategory />,
       amount: totalCount.postCategories || 0,
-      percentage: '+23%',
       title: 'Categories',
       iconColor: 'rgb(255, 244, 229)',
       iconBg: 'rgb(254, 201, 15)',
@@ -70,17 +61,15 @@ const Dashboard = () => {
     {
       icon: <FiBarChart />,
       amount: totalCount.postSubCategories || 0,
-      percentage: '+38%',
-      title: 'Sub Categories',
+      title: 'Today Registrations',
       iconColor: 'rgb(228, 106, 118)',
       iconBg: 'rgb(255, 244, 229)',
       pcColor: 'green-600',
     },
     {
-      icon: <HiOutlineRefresh />,
+      icon: <MdOutlinePostAdd />,
       amount: totalCount.posts || 0,
-      percentage: '-12%',
-      title: 'Posts',
+      title: 'Today Posts',
       iconColor: 'rgb(0, 194, 146)',
       iconBg: 'rgb(235, 250, 242)',
       pcColor: 'red-600',
@@ -90,27 +79,28 @@ const Dashboard = () => {
   return (
     <div className={`mt-2 ${currentMode === 'Dark' ? 'dark' : ''}`}>
       <div className="flex flex-wrap lg:flex-nowrap justify-center ">
-        <div className="flex m-3 flex-wrap justify-between gap-1 items-center w-100">
+        <div className="flex m-3 flex-wrap justify-between gap-2 items-center w-100">
           {earningData.map((item) => (
             <div
               key={item.title}
               className={`${currentMode === 'Dark' ? 'dark:bg-secondary-dark-bg dark:text-gray-200' : 'bg-white'
-                } lg:w-60 h-44 md:w-56 p-4 pt-9 rounded-2xl shadow-md`}
+                } lg:w-60 h-44 md:w-56 xl:w-72 p-4 pt-9 rounded-2xl shadow-md flex items-center`}
             >
-              <button
-                type="button"
-                style={{ color: item.iconColor, backgroundColor: item.iconBg }}
-                className="text-2xl opacity-0.9 rounded-full  p-4 hover:drop-shadow-xl"
-              >
-                {item.icon}
-              </button>
-              <p className="mt-2 mb-1">
-                <span className="text-lg font-semibold">{item.amount}</span>
-                {/* <span className={`text-sm text-${item.pcColor} ml-2`}>
-                  {item.percentage}
-                </span> */}
-              </p>
-              <p className="text-md text-gray-400 ">{item.title}</p>
+              <div>
+                <button
+                  type="button"
+                  style={{ color: item.iconColor, backgroundColor: item.iconBg }}
+                  className="text-2xl opacity-0.9 rounded-full  p-4 hover:drop-shadow-xl"
+                >
+                  {item.icon}
+                </button>
+              </div>
+              <div className='ml-3'>
+                <p className="mb-0">
+                  <span className="text-lg font-semibold">{item.amount}</span>
+                </p>
+                <p className="text-md text-gray-400 ">{item.title}</p>
+              </div>
             </div>
           ))}
         </div>

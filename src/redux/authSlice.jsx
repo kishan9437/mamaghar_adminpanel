@@ -4,7 +4,7 @@ import axios from '../api/authApi';
 // Async thunk for login
 export const loginAdmin = createAsyncThunk('auth/loginAdmin', async (adminData, { rejectWithValue }) => {
     try {
-        const response = await axios.post('/login', adminData);
+        const response = await axios.post('/api/login', adminData);
         localStorage.setItem('token', response.data.token);
         return response.data;
     } catch (error) {

@@ -1,40 +1,57 @@
 import { useEffect, useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
+import API_BASE_URL from '../config';
 
 const EditCategoryModal = ({ show, handleClose, category, onUpdate, selectedLanguage }) => {
     const [formData, setFormData] = useState({
         name: '',
         type: '',
         titleHint: '',
-        detailsHint: ''
+        detailsHint: '',
+        image: null
     });
-    const [language, setLanguage] = useState(selectedLanguage || 'en'); // Default English
+    const [modalLanguage, setModalLanguage] = useState(selectedLanguage || 'en'); // Default English
+    const [previewImage, setPreviewImage] = useState(''); // To preview old/new image
 
     // Update form data when category changes
     useEffect(() => {
         if (category) {
             setFormData({
-                name: category.languages?.[language]?.name || category.name || '',
-                type: category.languages?.[language]?.type || category.type || '',
-                titleHint: category.languages?.[language]?.titleHint || category.titleHint || '',
-                detailsHint: category.languages?.[language]?.detailsHint || category.detailsHint || ''
+                name: category.languages?.[modalLanguage]?.name || category.name || '',
+                type: category.languages?.[modalLanguage]?.type || category.type || '',
+                titleHint: category.languages?.[modalLanguage]?.titleHint || category.titleHint || '',
+                detailsHint: category.languages?.[modalLanguage]?.detailsHint || category.detailsHint || '',
+                image: category.image // Preserve existing image path
             });
+            setPreviewImage(category.image ? `${API_BASE_URL}${category.image}` : '');
         }
-    }, [category, language]);
-
+    }, [category, modalLanguage]);
+    
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async () => {
-        const updatedData = {
-            name: formData.name,
-            type: formData.type,
-            titleHint: formData.titleHint,
-            detailsHint: formData.detailsHint,
-            language: language  // 👈 Language pass karo
-        };
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFormData({ ...formData, image: file });
+            setPreviewImage(URL.createObjectURL(file)); // Preview new image
+        }
+    };
 
+    const handleSubmit = async () => {
+        const updatedData = new FormData();
+        updatedData.append('name', formData.name);
+        updatedData.append('type', formData.type);
+        updatedData.append('titleHint', formData.titleHint);
+        updatedData.append('detailsHint', formData.detailsHint);
+        updatedData.append('language', modalLanguage);
+    
+        // Only append image if a new one was selected
+        if (formData.image && typeof formData.image !== 'string') {
+            updatedData.append('image', formData.image);
+        }
+    
         try {
             await onUpdate(category.id, updatedData);
             handleClose();
@@ -83,7 +100,11 @@ const EditCategoryModal = ({ show, handleClose, category, onUpdate, selectedLang
                             onChange={handleChange}
                         />
                     </Form.Group>
-
+                    <Form.Group className="mb-3">
+                        <Form.Label>Image</Form.Label>
+                        {previewImage && <img src={previewImage} alt="Category" width="100" height="100" className="mb-2" />}
+                        <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
+                    </Form.Group>
                 </Form>
             </Modal.Body>
             <Modal.Footer>
