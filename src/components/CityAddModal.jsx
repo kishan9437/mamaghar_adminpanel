@@ -4,13 +4,13 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 
-const DistrictAddModal = ({ show, handleClose, refreshData }) => {
-    const [districtData, setDistrictData] = useState({
-        en: { name: "", code: "", stateId: "" },
-        gu: { name: "", code: "", stateId: "" },
-        hi: { name: "", code: "", stateId: "" }
+const CityAddModal = ({ show, handleClose, refreshData }) => {
+    const [cityData, setCityData] = useState({
+        en: { name: "", code: "", districtId: "" },
+        gu: { name: "", code: "", districtId: "" },
+        hi: { name: "", code: "", districtId: "" }
     });
-    const [states, setStates] = useState([]); // All states from API
+    const [districts, setDistrict] = useState([]); // All states from API
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
@@ -22,15 +22,15 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
         const fetchStates = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const res = await axios.get(`${API_BASE_URL}/api/statebylanguage`, {
+                const res = await axios.get(`${API_BASE_URL}/api/districtbylanguage`, {
                     headers: {
                         'Authorization': `Bearer ${token}`, // Add authorization header
                         'Accept-Language': selectedLanguage,
                     }
                 });
-                setStates(res.data.data || []);
+                setDistrict(res.data.data || []);
             } catch (err) {
-                console.error("Failed to fetch states:", err);
+                console.error("Failed to fetch district:", err);
             }
         };
         fetchStates();
@@ -45,17 +45,17 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
             }
 
             // Update code in all languages
-            const updatedData = { ...districtData };
+            const updatedData = { ...cityData };
             ['en', 'gu', 'hi'].forEach(lang => {
                 updatedData[lang] = {
                     ...updatedData[lang],
                     code: value
                 };
             });
-            setDistrictData(updatedData);
+            setCityData(updatedData);
         } else {
             // Update name for current language only
-            setDistrictData(prev => ({
+            setCityData(prev => ({
                 ...prev,
                 [selectedLanguage]: {
                     ...prev[selectedLanguage],
@@ -83,11 +83,11 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
                 return;
             }
 
-            const langData = districtData[selectedLanguage];
+            const langData = cityData[selectedLanguage];
 
             // Validate required fields
-            if (!langData.name || !langData.code || !langData.stateId) {
-                setError("Name, Code and State are required for the selected language.");
+            if (!langData.name || !langData.code || !langData.districtId) {
+                setError("Name, Code and district are required for the selected language.");
                 setLoading(false);
                 return;
             }
@@ -99,19 +99,19 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
             const formData = {
                 name: langData.name,
                 code: langData.code,
-                stateId: langData.stateId,
+                districtId: langData.districtId,
                 languages: {
                     [selectedLanguage]: {
                         name: langData.name,
                         code: langData.code,
                         slug: generatedSlug,
-                        stateId: langData.stateId
+                        districtId: langData.districtId
                     }
                 }
             };
 
             const response = await axios.post(
-                `${API_BASE_URL}/api/district`,
+                `${API_BASE_URL}/api/taluka`,
                 formData,
                 {
                     headers: {
@@ -124,10 +124,10 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
             setTimeout(() => {
                 handleClose();
                 setMessage(null);
-                setDistrictData({
-                    en: { name: "", code: "", stateId: "" },
-                    gu: { name: "", code: "", stateId: "" },
-                    hi: { name: "", code: "", stateId: "" }
+                setCityData({
+                    en: { name: "", code: "", districtId: "" },
+                    gu: { name: "", code: "", districtId: "" },
+                    hi: { name: "", code: "", districtId: "" }
                 });
                 refreshData();
             }, 2000);
@@ -150,7 +150,7 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
     };
 
     const getStatesForLanguage = () => {
-        return states.map((state) => ({
+        return districts.map((state) => ({
             _id: state._id,
             name: (typeof state.name === 'object' ? state.name.name : state.name) || "Unnamed"
         }));
@@ -159,7 +159,7 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
     return (
         <Modal show={show} onHide={handleClose} >
             <Modal.Header closeButton>
-                <Modal.Title>Add New District</Modal.Title>
+                <Modal.Title>Add New City</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {message && <Alert variant="success">{message}</Alert>}
@@ -185,17 +185,17 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
                             ))}
                         </div>
 
-                        <Form.Label>State</Form.Label>
+                        <Form.Label>District</Form.Label>
                         <Form.Select
-                            name="stateId"
-                            value={districtData[selectedLanguage].stateId}
+                            name="districtId"
+                            value={cityData[selectedLanguage].districtId}
                             onChange={handleChange}
                             required
                         >
-                            <option value="">-- Select State --</option>
-                            {getStatesForLanguage().map((state) => (
-                                <option key={state._id} value={state._id}>
-                                    {state.name} {/* ✅ FIXED */}
+                            <option value="">-- Select District --</option>
+                            {getStatesForLanguage().map((district) => (
+                                <option key={district._id} value={district._id}>
+                                    {district.name} {/* ✅ FIXED */}
                                 </option>
                             ))}
                         </Form.Select>
@@ -206,7 +206,7 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
                         <Form.Control
                             type="text"
                             name="name"
-                            value={districtData[selectedLanguage]?.name || ""}
+                            value={cityData[selectedLanguage]?.name || ""}
                             onChange={handleChange}
                             required
                         />
@@ -217,7 +217,7 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
                         <Form.Control
                             type="text"
                             name="code"
-                            value={districtData[selectedLanguage].code || ""}
+                            value={cityData[selectedLanguage].code || ""}
                             onChange={handleChange}
                             required
                             readOnly={codeEditedLanguage !== null && selectedLanguage !== codeEditedLanguage}
@@ -239,4 +239,4 @@ const DistrictAddModal = ({ show, handleClose, refreshData }) => {
     )
 }
 
-export default DistrictAddModal;
+export default CityAddModal;

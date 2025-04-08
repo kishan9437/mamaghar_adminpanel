@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Button, InputGroup, Form, Table, Pagination } from 'react-bootstrap'
+import { Button, InputGroup, Form, Table, Pagination, Modal } from 'react-bootstrap'
 import StateAddModal from '../components/StateAddModal';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL from '../config';
 import EditStateModal from '../components/EditStateModal';
+import Swal from 'sweetalert2';
+import { FaMapMarkerAlt, FaTrash } from 'react-icons/fa';
 
 function State() {
     const [showModal, setShowModal] = useState(false);
@@ -23,8 +25,9 @@ function State() {
     const navigate = useNavigate();
     const [editingState, setEditingState] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [selectedState, setSelectedState] = useState([]);
     const [modalLanguage, setModalLanguage] = useState('en'); // 🔥 Independent modal language
+    const [showMapModal, setShowMapModal] = useState(false);
+    const [selectedLocation, setSelectedLocation] = useState(null);
 
     const fetchStates = async () => {
         try {
@@ -85,8 +88,19 @@ function State() {
     };
 
     const handleDelete = async (stateId) => {
-        console.log(stateId);
-        if (!window.confirm('Are you sure you want to delete this state?')) return;
+        // console.log(stateId)
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'You want to delete this state?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -96,41 +110,30 @@ function State() {
 
             // Refresh the list
             fetchStates();
-            alert('state deleted successfully');
+            Swal.fire({
+                title: 'Deleted!',
+                text: 'State deleted successfully.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch state');
             if (error.response?.status === 401) {
-                alert('Session expired. Please log in again.');
-                navigate('/login'); // Redirect to login page
+                Swal.fire({
+                    title: 'Session Expired!',
+                    text: 'Please log in again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    navigate('/login'); // Redirect to login
+                }); // Redirect to login page
             }
-        }
-    };
-
-    const handleCheckboxChange = (stateId) => {
-        setSelectedState(prev =>
-            prev.includes(stateId)
-                ? prev.filter(id => id !== stateId) // Remove if already selected
-                : [...prev, stateId] // Add if not selected
-        );
-    };
-
-    const handleLanguageSelection = (lang) => {
-        if (selectedState.length === 1) {
-            const stateToEdit = states.find(cat => cat.id === selectedState[0]);
-            if (stateToEdit) {
-                setEditingState(stateToEdit);
-                setModalLanguage(lang); // 🔥 Change modal language, not table language
-                setShowEditModal(true);
-            }
-        } else {
-            alert("Please select one state to edit.");
         }
     };
 
     const handleModalClose = () => {
         setShowEditModal(false);
         setEditingState(null);
-        setSelectedState([]); // Clear checkbox selection
     };
 
     const handleUpdate = async (stateId, updatedData) => {
@@ -198,43 +201,24 @@ function State() {
                         <option value="gu">ગુજરાતી</option>
                         <option value="hi">हिंदी</option>
                     </Form.Select>
+                </div>
 
-                    {/* <Form.Select style={{ width: '150px' }}>
-                        <option value="">Select State</option>
-                    </Form.Select> */}
-                </div>
-                <div className='flex w-full justify-end gap-2 mb-1'>
-                    {['en', 'gu', 'hi'].map(lang => (
-                        <button
-                            key={lang}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium 
-              ${modalLanguage === lang ? 'bg-blue-100 text-blue-700' : 'bg-blue-100 text-blue-700'} 
-              border border-blue-200 hover:bg-blue-200 transition-colors duration-200
-            disabled:bg-gray-300 disabled:text-gray-500 cursor-not-allowed`}
-                            onClick={() => handleLanguageSelection(lang)}
-                            disabled={selectedLanguage !== lang} // ✅ Disable other buttons
-                        >
-                            {lang.toUpperCase()}
-                        </button>
-                    ))}
-                </div>
             </div>
 
             <div className="overflow-x-auto">
                 <Table striped bordered hover responsive className='pb-0'>
                     <thead>
                         <tr>
-                            <th></th>
                             <th
                                 onClick={() => handleSort('name')}
                                 style={{ cursor: 'pointer' }}
                             >
                                 Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
                             </th>
-                            {/* <th
+                            <th
                             >
                                 Polygon
-                            </th> */}
+                            </th>
                             <th
                             >
                                 Total Users
@@ -261,33 +245,64 @@ function State() {
                         ) : (
                             states.map((state, index) => (
                                 <tr key={state.id}>
-                                    <td className='text-center'>
-                                        <input
-                                            type="checkbox"
-                                            className='h-5 w-5 mt-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
-                                            checked={selectedState.includes(state.id)}
-                                            onChange={() => handleCheckboxChange(state.id)}
-                                        />
-                                    </td>
                                     <td>{state.name}</td>
-                                    {/* <td></td> */}
+                                    <td></td>
                                     <td>{state.totaluser}</td>
                                     <td>{state.typeCount}</td>
+                                    <td className="">
+                                        <button
+                                            onClick={() => {
+                                                if (state.location === 'N/A') {
+                                                    alert('Location data not available');
+                                                    // or use alert('Location data not available');
+                                                    return;
+                                                }
+                                                setSelectedLocation(state.location);
+                                                setShowMapModal(true);
+                                            }}
+                                            className={`
+      p-2 rounded-full transition-all duration-200
+      ${state.location === 'N/A'
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700'
+                                                }
+    `}
+                                            title={state.location === 'N/A' ? 'Location unavailable' : 'View on map'}
+                                            // disabled={state.location === 'N/A'}
+                                        >
+                                            <FaMapMarkerAlt className="text-lg" />
+                                        </button>
+                                    </td>
+
                                     <td>
-                                        <div className='flex flex-col'>
-                                            <span>Lat : {state.location !== 'N/A' ? state.location.split(',')[0].trim() : 'N/A'}</span>
-                                            <span>Lng : {state.location !== 'N/A' ? state.location.split(',')[1].trim() : 'N/A'}
-                                            </span>
+                                        <div className='flex w-full gap-1 mb-1'>
+                                            {['en', 'gu', 'hi'].map(lang => (
+                                                <button
+                                                    key={lang}
+                                                    className={`px-2 py-1.5 rounded-md text-sm font-medium 
+          border border-blue-200 hover:bg-blue-200 transition-colors duration-200
+          ${modalLanguage === lang ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-700'}`}
+                                                    onClick={() => {
+                                                        setEditingState(state.id); // Set the current state ID being edited
+                                                        setModalLanguage(lang);     // Set the selected language
+                                                        setShowEditModal(true);    // Open the modal
+                                                    }}
+                                                >
+                                                    {lang.toUpperCase()}
+                                                </button>
+                                            ))}
                                         </div>
                                     </td>
-                                    <td>{state.languages}</td>
                                     <td>
                                         <Button
                                             variant="danger"
                                             size="sm"
                                             onClick={() => handleDelete(state.id)}
+                                            disabled={state.role === 'admin'}
+                                            className="flex items-center justify-center gap-1 px-3 py-1.5"
                                         >
-                                            Delete
+                                            <FaTrash className="text-sm" />
+                                            <span className="sr-only">Delete</span> {/* Screen reader only text */}
                                         </Button>
                                     </td>
                                 </tr>
@@ -355,11 +370,41 @@ function State() {
                 <EditStateModal
                     show={showEditModal}
                     handleClose={handleModalClose}
-                    state={editingState}
+                    stateId={editingState}
                     onUpdate={handleUpdate}
                     selectedLanguage={modalLanguage}
                 />
             )}
+
+            {/* Map Modal */}
+            <Modal show={showMapModal} onHide={() => setShowMapModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Location Map</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedLocation && (
+                        <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                frameBorder="0"
+                                scrolling="no"
+                                marginHeight="0"
+                                marginWidth="0"
+                                src={`https://maps.google.com/maps?q=${selectedLocation}&z=8&output=embed`}
+                                title="Location Map"
+                            >
+                            </iframe>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowMapModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </div>
     )
 }

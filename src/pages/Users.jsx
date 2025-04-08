@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 import EditUserModal from '../components/EditUserModal';
 import UserReportModal from '../components/UserReportModal';
+import Swal from 'sweetalert2';
+import { FaEdit, FaTrash } from 'react-icons/fa'; // Import icons from Font Awesome
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -49,6 +51,8 @@ const Users = () => {
                 return;
             }
 
+            console.log(selectedState)
+
             const response = await axios.get(`${API_BASE_URL}/api/users`, {
                 params: {
                     page,
@@ -91,12 +95,16 @@ const Users = () => {
         }
     };
 
-    const fetchDistrict = async () => {
+    const fetchDistricts = async (stateId) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/district`);
+            if (!stateId) {
+                setDistrict([]);
+                return;
+            }
+            const response = await axios.get(`${API_BASE_URL}/api/district/${stateId}`);
             setDistrict(response.data.data || []);
         } catch (error) {
-            console.error('Error fetching states:', error.response?.data?.message || error.message);
+            console.error('Error fetching districts:', error.response?.data?.message || error.message);
         }
     };
 
@@ -106,13 +114,23 @@ const Users = () => {
     };
 
     const handleStateChange = (e) => {
-        setSelectedState(e.target.value);
-        setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+        const selectedStateName = e.target.value;
+        const selectedStateObj = states.find(state => state.name === selectedStateName);
+
+        setSelectedState(selectedStateName);
+        setSelectedDistrict(""); // Reset district when state changes
+
+        if (selectedStateObj) {
+            fetchDistricts(selectedStateObj.id); // Pass state ID to fetch districts
+        } else {
+            setDistrict([]);
+        }
+        // setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
     };
 
     const handleDistrictChange = (e) => {
         setSelectedDistrict(e.target.value);
-        setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+        // setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
     };
 
     const handleSort = (key) => {
@@ -127,7 +145,18 @@ const Users = () => {
     };
 
     const handleDelete = async (userId) => {
-        if (!window.confirm('Are you sure you want to delete this user?')) return;
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'You want to delete this user?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -136,12 +165,23 @@ const Users = () => {
             });
 
             fetchUsers();
-            alert('User deleted successfully');
+            Swal.fire({
+                title: 'Deleted!',
+                text: 'User deleted successfully.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to delete user');
             if (err.response?.status === 401) {
-                alert('Session expired. Please log in again.');
-                navigate('/login');
+                Swal.fire({
+                    title: 'Session Expired!',
+                    text: 'Please log in again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    navigate('/login'); // Redirect to login
+                });
             }
         }
     };
@@ -158,10 +198,8 @@ const Users = () => {
         }
     };
 
-
     useEffect(() => {
         fetchStates();
-        fetchDistrict();
         fetchUsers();
     }, [pagination.page, pagination.limit, sortConfig, searchTerm, selectedState, selectedDistrict]);
 
@@ -180,16 +218,31 @@ const Users = () => {
                         onChange={handleSearch}
                     />
                 </InputGroup>
-                <Form.Select className='mb-1' style={{ width: '150px' }} value={selectedState} onChange={handleStateChange}>
+                <Form.Select
+                    className='mb-1'
+                    style={{ width: '150px' }}
+                    value={selectedState}
+                    onChange={handleStateChange}
+                >
                     <option value="">Select State</option>
                     {states.map((state, index) => (
-                        <option key={index} value={state}>{state}</option>
+                        <option key={index} value={state.name}> {/* Use state.code (or state.name) as value */}
+                            {state.name} {/* Display state.name (or state.code) */}
+                        </option>
                     ))}
                 </Form.Select>
-                <Form.Select className='mb-1' style={{ width: '150px' }} value={selectedDistrict} onChange={handleDistrictChange}>
+                <Form.Select
+                    className='mb-1'
+                    style={{ width: '150px' }}
+                    value={selectedDistrict}
+                    onChange={handleDistrictChange}
+                // disabled={!selectedState}
+                >
                     <option value="">Select District</option>
                     {district.map((district, index) => (
-                        <option key={index} value={district}>{district}</option>
+                        <option key={index} value={district.name}>
+                            {district.name}
+                        </option>
                     ))}
                 </Form.Select>
             </div>
@@ -240,7 +293,7 @@ const Users = () => {
                                                     e.target.src = '/mamaGhar.png';
                                                 }}
                                             />
-                                            
+
                                         </div>
                                         <div className='ml-2'>
                                             <span className=''>{user.name}</span>
@@ -306,13 +359,6 @@ const Users = () => {
                                 </td>
                                 {/* <td>{user.status}</td> */}
                                 <td>
-                                    {/* <Dropdown>
-                                        <Dropdown.Toggle variant="secondary" size="sm">Actions</Dropdown.Toggle>
-                                        <Dropdown.Menu>
-                                            <Dropdown.Item href={`/edit-user/${user._id}`}>Edit</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleBlockUser(user._id)}>Block</Dropdown.Item>
-                                        </Dropdown.Menu>
-                                    </Dropdown> */}
                                     <Button
                                         variant="warning"
                                         size="sm"
@@ -320,17 +366,20 @@ const Users = () => {
                                             setSelectedUser(user);
                                             setShowEditModal(true);
                                         }}
-                                        className="me-2"
+                                        className="me-2 flex items-center justify-center gap-1 px-3 py-1.5"
                                     >
-                                        Edit
+                                        <FaEdit className="text-sm" />
+                                        <span className="sr-only">Edit</span> {/* Screen reader only text */}
                                     </Button>
                                     <Button
                                         variant="danger"
                                         size="sm"
                                         onClick={() => handleDelete(user._id)}
-                                        disabled={user.role === 'admin'} // Prevent deleting admin users
+                                        disabled={user.role === 'admin'}
+                                        className="flex items-center justify-center gap-1 px-3 py-1.5"
                                     >
-                                        Delete
+                                        <FaTrash className="text-sm" />
+                                        <span className="sr-only">Delete</span> {/* Screen reader only text */}
                                     </Button>
                                 </td>
                             </tr>

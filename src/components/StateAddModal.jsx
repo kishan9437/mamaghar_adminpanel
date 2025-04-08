@@ -15,16 +15,36 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const [selectedLanguage, setSelectedLanguage] = useState("en");
+    const [codeEditedLanguage, setCodeEditedLanguage] = useState(null);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setStateData(prev => ({
-            ...prev,
-            [selectedLanguage]: {
-                ...prev[selectedLanguage],
-                [name]: value
+
+        if (name === "code") {
+            // If code is being edited for the first time, remember the language
+            if (!codeEditedLanguage) {
+                setCodeEditedLanguage(selectedLanguage);
             }
-        }));
+
+            // Update code in all languages
+            const updatedData = { ...stateData };
+            ['en', 'gu', 'hi'].forEach(lang => {
+                updatedData[lang] = {
+                    ...updatedData[lang],
+                    code: value
+                };
+            });
+            setStateData(updatedData);
+        } else {
+            // Update name for current language only
+            setStateData(prev => ({
+                ...prev,
+                [selectedLanguage]: {
+                    ...prev[selectedLanguage],
+                    [name]: value
+                }
+            }));
+        }
     };
 
     const slugify = (text) => {
@@ -37,8 +57,8 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
             .replace(/--+/g, '-'); // Replace multiple - with single -
     };
 
-    const handleLanguageChange = (e) => {
-        setSelectedLanguage(e.target.value);
+    const handleLanguageChange = (lang) => {
+        setSelectedLanguage(lang);
     };
 
     const handleSubmit = async (e) => {
@@ -55,34 +75,27 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
                 navigate('/login'); // Redirect to login page
                 return;
             }
+            const langData = stateData[selectedLanguage];
 
-            // Generate Slug from English Name
-            const slug = slugify(stateData.en.name);
-
-            // Prepare languages data with consistent image and slug
-            let filteredLanguages = {};
-            Object.keys(stateData).forEach(lang => {
-                if (stateData[lang].name.trim()) {  // Only include languages where name is filled
-                    filteredLanguages[lang] = {
-                        name: stateData[lang].name,
-                        code: stateData[lang].code,
-                        slug: slug,
-                    };
-                }
-            });
-
-            if (Object.keys(filteredLanguages).length === 0) {
-                setError("At least one language must be filled.");
+            if (!langData.name || !langData.code) {
+                setError("Name and Code are required for the selected language.");
                 setLoading(false);
                 return;
             }
 
-            // ✅ Prepare request data
+            const slug = slugify(langData.name);
+
             const formData = {
-                name: stateData.en.name,  // Still required at the root level
-                code: stateData.en.code,
-                slug: slug,
-                languages: filteredLanguages
+                name: langData.name,
+                code: langData.code,
+                slug,
+                languages: {
+                    [selectedLanguage]: {
+                        name: langData.name,
+                        code: langData.code,
+                        slug
+                    }
+                }
             };
 
             const response = await axios.post(
@@ -97,9 +110,9 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
             setMessage(response.data.message);
 
             setTimeout(() => {
-                handleClose(); // Close modal
-                setMessage(null); // Reset message after closing modal
-
+                handleClose();
+                setMessage(null);
+                setCodeEditedLanguage(null)
                 setStateData({ en: { name: "", code: "" }, gu: { name: "", code: "" }, hi: { name: "", code: "" } });
                 refreshData()
             }, 2000);
@@ -131,6 +144,25 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
                 {error && <Alert variant="danger">{error}</Alert>}
 
                 <Form onSubmit={handleSubmit} encType="multipart/form-data">
+                    {/* Language Tabs */}
+                    <div className="flex border-b mb-4">
+                        {['en', 'gu', 'hi'].map((lang) => (
+                            <button
+                                key={lang}
+                                type="button"
+                                className={`px-4 py-2 font-medium text-sm focus:outline-none ${selectedLanguage === lang
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                onClick={() => handleLanguageChange(lang)}
+                            >
+                                {lang === 'en' && 'EN'}
+                                {lang === 'gu' && 'GU'}
+                                {lang === 'hi' && 'HI'}
+                            </button>
+                        ))}
+                    </div>
+
                     <Form.Group className="mb-3">
                         <Form.Label>Name</Form.Label>
                         <Form.Control
@@ -138,6 +170,7 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
                             name="name"
                             value={stateData[selectedLanguage].name}
                             onChange={handleChange}
+                            placeholder={`Enter name ${selectedLanguage.toUpperCase()} language`}
                             required
                         />
                     </Form.Group>
@@ -149,17 +182,11 @@ const StateAddModal = ({ show, handleClose, refreshData }) => {
                             name="code"
                             value={stateData[selectedLanguage].code}
                             onChange={handleChange}
+                            placeholder={`Enter code ${selectedLanguage.toUpperCase()} language`}
                             required
+                            readOnly={codeEditedLanguage !== null && selectedLanguage !== codeEditedLanguage}
+                            className={codeEditedLanguage !== null && selectedLanguage !== codeEditedLanguage ? 'bg-light' : ''}
                         />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>Select Language</Form.Label>
-                        <Form.Select as="select" value={selectedLanguage} onChange={handleLanguageChange}>
-                            <option value="en">English</option>
-                            <option value="gu">ગુજરાતી</option>
-                            <option value="hi">हिंदी</option>
-                        </Form.Select>
                     </Form.Group>
 
                     <div className="flex justify-end">

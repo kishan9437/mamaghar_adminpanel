@@ -17,16 +17,41 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
     const [selectedLanguage, setSelectedLanguage] = useState("en");
     const [image, setImage] = useState(null);
     const [selectedImage, setSelectedImage] = useState();
+    const [typeLocked, setTypeLocked] = useState(false);
+    const [typeEditLanguage, setTypeEditLanguage] = useState(null);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setCategory(prev => ({
-            ...prev,
-            [selectedLanguage]: {
-                ...prev[selectedLanguage],
-                [name]: value
+        if (name === "type") {
+            if (!typeLocked) {
+                // First time setting type - lock it and remember the language
+                setTypeLocked(true);
+                setTypeEditLanguage(selectedLanguage);
+
+                // Update type in all languages
+                setCategory(prev => ({
+                    en: { ...prev.en, type: value },
+                    gu: { ...prev.gu, type: value },
+                    hi: { ...prev.hi, type: value }
+                }));
+            } else if (selectedLanguage === typeEditLanguage) {
+                // Only allow changes in the original language
+                setCategory(prev => ({
+                    en: { ...prev.en, type: value },
+                    gu: { ...prev.gu, type: value },
+                    hi: { ...prev.hi, type: value }
+                }));
             }
-        }));
+        } else {
+            // Normal field update
+            setCategory(prev => ({
+                ...prev,
+                [selectedLanguage]: {
+                    ...prev[selectedLanguage],
+                    [name]: value
+                }
+            }));
+        }
     };
 
     const slugify = (text) => {
@@ -103,8 +128,7 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                     type: category.hi.type || category.en.type,
                     titleHint: category.hi.titleHint || category.en.titleHint,
                     detailsHint: category.hi.detailsHint || category.en.detailsHint,
-                    slug: slug, // Same slug for Hindi
-                    // image will be added by backend to all languages
+                    slug: slug,
                 }
             };
 
@@ -128,6 +152,8 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                 handleClose(); // Close modal
                 setMessage(null); // Reset message after closing modal
 
+                setTypeLocked(false);
+                setTypeEditLanguage(null);
                 // Clear input fields
                 setCategory({
                     en: { name: "", type: "", titleHint: "", detailsHint: "" },
@@ -165,6 +191,25 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                 {error && <Alert variant="danger">{error}</Alert>}
 
                 <Form onSubmit={handleSubmit} encType="multipart/form-data">
+                    {/* Language Tabs */}
+                    <div className="flex border-b mb-4">
+                        {['en', 'gu', 'hi'].map((lang) => (
+                            <button
+                                key={lang}
+                                type="button"
+                                className={`px-4 py-2 font-medium text-sm focus:outline-none ${selectedLanguage === lang
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                onClick={() => setSelectedLanguage(lang)}
+                            >
+                                {lang === 'en' && 'EN'}
+                                {lang === 'gu' && 'GU'}
+                                {lang === 'hi' && 'HI'}
+                            </button>
+                        ))}
+                    </div>
+
                     <Form.Group className="mb-3">
                         <Form.Label>Name</Form.Label>
                         <Form.Control
@@ -172,19 +217,25 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                             name="name"
                             value={category[selectedLanguage].name}
                             onChange={handleChange}
+                            placeholder={`Enter name ${selectedLanguage.toUpperCase()} language`}
                             required
                         />
                     </Form.Group>
-
                     <Form.Group className="mb-3">
                         <Form.Label>Type</Form.Label>
-                        <Form.Control
-                            type="text"
+                        <Form.Select
                             name="type"
                             value={category[selectedLanguage].type}
                             onChange={handleChange}
                             required
-                        />
+                            disabled={typeLocked && selectedLanguage !== typeEditLanguage}
+                            className={typeLocked && selectedLanguage !== typeEditLanguage ? 'bg-light' : ''}
+                        >
+                            <option value="">Select Type</option>
+                            <option value="Post">Post</option>
+                            <option value="Question">Question</option>
+                        </Form.Select>
+
                     </Form.Group>
 
                     <Form.Group className="mb-3">
@@ -193,6 +244,7 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                             type="text"
                             name="titleHint"
                             value={category[selectedLanguage].titleHint}
+                            placeholder={`Enter titleHint ${selectedLanguage.toUpperCase()} language`}
                             onChange={handleChange}
                             required
                         />
@@ -205,6 +257,7 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                             name="detailsHint"
                             value={category[selectedLanguage].detailsHint}
                             onChange={handleChange}
+                            placeholder={`Enter detailsHint ${selectedLanguage.toUpperCase()} language`}
                             required
                         />
                     </Form.Group>
@@ -213,15 +266,6 @@ const CategoryModal = ({ show, handleClose, refreshData }) => {
                     <Form.Group className="mb-3">
                         <Form.Label>Upload Image</Form.Label>
                         <Form.Control type="file" onChange={(e) => setSelectedImage(e.target.files[0])} />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>Select Language</Form.Label>
-                        <Form.Select as="select" value={selectedLanguage} onChange={handleLanguageChange}>
-                            <option value="en">English</option>
-                            <option value="gu">ગુજરાતી</option>
-                            <option value="hi">हिंदी</option>
-                        </Form.Select>
                     </Form.Group>
 
                     <div className="flex justify-end">

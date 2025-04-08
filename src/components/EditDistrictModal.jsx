@@ -4,13 +4,13 @@ import API_BASE_URL from '../config'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-function EditStateModal({ show, handleClose, stateId, onUpdate, selectedLanguage }) {
+function EditDistrictModal({ show, handleClose, districtId, onUpdate, selectedLanguage }) {
     const [formData, setFormData] = useState({
         name: '',
         code: '',
     });
     const [modalLanguage, setModalLanguage] = useState(selectedLanguage || 'en'); // Default English
-    const [state, setState] = useState(''); // To preview
+    const [district, setDistrict] = useState(''); // To preview
     const navigate = useNavigate()
 
     const fetchStatebyId = async () => {
@@ -21,13 +21,13 @@ function EditStateModal({ show, handleClose, stateId, onUpdate, selectedLanguage
                 throw new Error('No authentication token found');
             }
 
-            const response = await axios.get(`${API_BASE_URL}/api/statebyid/${stateId}`, {
+            const response = await axios.get(`${API_BASE_URL}/api/districtbyid/${districtId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`, // Add authorization header
                     'Accept-Language': selectedLanguage,
                 }
             });
-            setState(response.data.data);
+            setDistrict(response.data.data);
         } catch (err) {
             if (err.response?.status === 401) {
                 alert('Session expired. Please log in again.');
@@ -41,13 +41,13 @@ function EditStateModal({ show, handleClose, stateId, onUpdate, selectedLanguage
     }, [selectedLanguage]);
 
     useEffect(() => {
-        if (state) {
+        if (district) {
             setFormData({
-                name: state.languages?.[modalLanguage]?.name || state.name || '',
-                code: state.languages?.[modalLanguage]?.code || state.code || '',
+                name: district.languages?.[modalLanguage]?.name || district.name || '',
+                code: district.languages?.[modalLanguage]?.code || district.code || '',
             });
         }
-    }, [state, modalLanguage]);
+    }, [district, modalLanguage]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -60,14 +60,14 @@ function EditStateModal({ show, handleClose, stateId, onUpdate, selectedLanguage
             language: modalLanguage
         };
 
-        await onUpdate(state.id, updatedData);
+        await onUpdate(district.id, updatedData);
         handleClose();
     };
 
     return (
         <Modal show={show} onHide={handleClose}>
             <Modal.Header closeButton>
-                <Modal.Title>Edit State</Modal.Title>
+                <Modal.Title>Edit District</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <Form>
@@ -102,4 +102,4 @@ function EditStateModal({ show, handleClose, stateId, onUpdate, selectedLanguage
     )
 }
 
-export default EditStateModal
+export default EditDistrictModal

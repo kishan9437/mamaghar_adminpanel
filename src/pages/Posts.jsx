@@ -3,6 +3,8 @@ import { Table, Pagination, Modal, Form, InputGroup, Button, Image } from 'react
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
+import Swal from 'sweetalert2';
+import { FaTrash } from 'react-icons/fa';
 
 const Posts = () => {
     const [posts, setPosts] = useState([]);
@@ -79,8 +81,19 @@ const Posts = () => {
     };
 
     const handleDelete = async (postId) => {
-        if (!window.confirm('Are you sure you want to delete this post?')) return;
-        
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'You want to delete this post?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) return;
+
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${API_BASE_URL}/api/delete-posts/${postId}`, {
@@ -88,12 +101,23 @@ const Posts = () => {
             });
 
             fetchPosts();
-            alert('Post deleted successfully');
+            Swal.fire({
+                title: 'Deleted!',
+                text: 'Post deleted successfully.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to delete post');
             if (err.response?.status === 401) {
-                alert('Session expired. Please log in again.');
-                navigate('/login');
+                Swal.fire({
+                    title: 'Session Expired!',
+                    text: 'Please log in again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    navigate('/login'); // Redirect to login
+                });
             }
         }
     };
@@ -153,7 +177,7 @@ const Posts = () => {
                         ) : (
                             posts.map((post, index) => (
                                 <tr key={post._id}>
-                                    <td>{(index+1)+(pagination.page-1) * (pagination.limit)}</td>
+                                    <td>{(index + 1) + (pagination.page - 1) * (pagination.limit)}</td>
                                     <td>{post.title}</td>
                                     <td>{post.price}</td>
                                     <td>{post.details}</td>
@@ -176,8 +200,11 @@ const Posts = () => {
                                             variant="danger"
                                             size="sm"
                                             onClick={() => handleDelete(post._id)}
+                                            disabled={post.role === 'admin'}
+                                            className="flex items-center justify-center gap-1 px-3 py-1.5"
                                         >
-                                            Delete
+                                            <FaTrash className="text-sm" />
+                                            <span className="sr-only">Delete</span> {/* Screen reader only text */}
                                         </Button>
                                     </td>
                                 </tr>

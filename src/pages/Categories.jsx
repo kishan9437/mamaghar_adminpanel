@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 import EditCategoryModal from '../components/EditCategoryModal';
 import { FaArrowRightLong } from "react-icons/fa6";
+import Swal from 'sweetalert2';
+import { FaTrash } from 'react-icons/fa';
 
 const Categories = () => {
   const [showModal, setShowModal] = useState(false);
@@ -89,7 +91,18 @@ const Categories = () => {
   };
 
   const handleDelete = async (categoryId) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You want to delete this category?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -99,36 +112,31 @@ const Categories = () => {
 
       // Refresh the list
       fetchCategories();
-      alert('Category deleted successfully');
+      Swal.fire({
+        title: 'Deleted!',
+        text: 'Category deleted successfully.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch categories');
       if (error.response?.status === 401) {
-        alert('Session expired. Please log in again.');
-        navigate('/login'); // Redirect to login page
+        Swal.fire({
+          title: 'Session Expired!',
+          text: 'Please log in again.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        }).then(() => {
+          navigate('/login'); // Redirect to login
+        });
       }
     }
   };
 
-  const handleCheckboxChange = (categoryId) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId) // Remove if already selected
-        : [...prev, categoryId] // Add if not selected
-    );
-  };
-
-  const handleLanguageSelection = (lang) => {
-    console.log(lang);
-    if (selectedCategories.length === 1) {
-      const categoryToEdit = categories.find(cat => cat.id === selectedCategories[0]);
-      if (categoryToEdit) {
-        setEditingCategory(categoryToEdit);
-        setModalLanguage(lang); // 🔥 Change modal language, not table language
-        setShowEditModal(true);
-      }
-    } else {
-      alert("Please select one category to edit.");
-    }
+  const handleLanguageSelection = (category, lang) => {
+    setEditingCategory(category);
+    setModalLanguage(lang);
+    setShowEditModal(true);
   };
 
   const handleModalClose = () => {
@@ -227,21 +235,6 @@ const Categories = () => {
             />
           </InputGroup>
         </div>
-        <div className='flex w-full justify-end gap-2 mb-1'>
-          {['en', 'gu', 'hi'].map(lang => (
-            <button
-              key={lang}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium 
-              ${modalLanguage === lang ? 'bg-blue-100 text-blue-700' : 'bg-blue-100 text-blue-700'} 
-              border border-blue-200 hover:bg-blue-200 transition-colors duration-200
-            disabled:bg-gray-300 disabled:text-gray-500 cursor-not-allowed`}
-              onClick={() => handleLanguageSelection(lang)}
-              disabled={selectedLanguage !== lang} // ✅ Disable other buttons
-            >
-              {lang.toUpperCase()}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Table */}
@@ -249,7 +242,6 @@ const Categories = () => {
         <Table striped bordered hover responsive className='pb-0'>
           <thead>
             <tr>
-              <th></th>
               <th
                 onClick={() => handleSort('name')}
                 style={{ cursor: 'pointer' }}
@@ -268,14 +260,8 @@ const Categories = () => {
               >
                 Type {sortConfig.key === 'type' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
               </th>
-              <th>Post/Questions</th>
+              <th>{selectedType === "Post" ? "Posts" : "Questions"}</th>
               <th>Languages</th>
-              {/* <th
-                onClick={() => handleSort('detailsHint')}
-                style={{ cursor: 'pointer' }}
-              >
-                Details Hint {sortConfig.key === 'detailsHint' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
-              </th> */}
               <th>Actions</th>
             </tr>
           </thead>
@@ -295,14 +281,6 @@ const Categories = () => {
             ) : (
               categories.map((category, index) => (
                 <tr key={category.id}>
-                  <td className='text-center'>
-                    <input
-                      type="checkbox"
-                      className='h-5 w-5 mt-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
-                      checked={selectedCategories.includes(category.id)} 
-                      onChange={() => handleCheckboxChange(category.id)} 
-                    />
-                  </td>
                   <td>
                     <div className='flex items-center'>
                       <div className='flex flex-col'>
@@ -329,27 +307,35 @@ const Categories = () => {
                   <td>{category.titleHint}</td>
                   <td>{category.type}</td>
                   <td>{category.typeCount}</td>
-                  {/* <td>{Object.keys(category.languages).join(', ')}</td> */}
-                  {/* <td>{category.detailsHint}</td> */}
-                  <td>{category.languages}</td>
                   <td>
-                    {/* <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => {
-                        setEditingCategory(category);
-                        setShowEditModal(true);
-                      }}
-                      className="me-2"
-                    >
-                      Edit
-                    </Button> */}
+                    <div className='flex w-full gap-1 mb-1'>
+                      {['en', 'gu', 'hi'].map(lang => (
+                        <button
+                          key={lang}
+                          className={`px-2 py-1.5 rounded-md text-sm font-medium 
+              border border-blue-200 hover:bg-blue-200 transition-colors duration-200
+              ${selectedLanguage === lang ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-700'}`}
+                          onClick={() => {
+                            setEditingCategory(category.id);
+                            setModalLanguage(lang);
+                            setShowEditModal(true);
+                          }}
+                        >
+                          {lang.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
                     <Button
                       variant="danger"
                       size="sm"
                       onClick={() => handleDelete(category.id)}
+                      disabled={category.role === 'admin'}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5"
                     >
-                      Delete
+                      <FaTrash className="text-sm" />
+                      <span className="sr-only">Delete</span> {/* Screen reader only text */}
                     </Button>
                   </td>
                 </tr>
@@ -417,7 +403,7 @@ const Categories = () => {
         <EditCategoryModal
           show={showEditModal}
           handleClose={handleModalClose}
-          category={editingCategory}
+          categoryId={editingCategory}
           onUpdate={handleUpdate}
           selectedLanguage={modalLanguage}
         />

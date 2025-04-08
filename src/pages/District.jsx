@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Button, InputGroup, Form, Table, Pagination } from 'react-bootstrap'
+import { Button, InputGroup, Form, Table, Pagination, Modal } from 'react-bootstrap'
 import DistrictAddModal from '../components/DistrictAddModal';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL from '../config';
+import Swal from 'sweetalert2';
+import EditDistrictModal from '../components/EditDistrictModal';
+import { FaMapMarkerAlt, FaTrash } from 'react-icons/fa';
 
 function District() {
     const [showModal, setShowModal] = useState(false);
@@ -19,6 +22,11 @@ function District() {
         totalPages: 1,
     });
     const [selectedLanguage, setSelectedLanguage] = useState('en');
+    const [modalLanguage, setModalLanguage] = useState('en'); // 🔥 Independent modal language
+    const [editingDistrict, setEditingDistrict] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showMapModal, setShowMapModal] = useState(false);
+    const [selectedLocation, setSelectedLocation] = useState(null);
     const navigate = useNavigate();
 
     const fetchDistrict = async () => {
@@ -80,7 +88,18 @@ function District() {
     };
 
     const handleDelete = async (districtId) => {
-        if (!window.confirm('Are you sure you want to delete this district?')) return;
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'You want to delete this district?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -90,9 +109,59 @@ function District() {
 
             // Refresh the list
             fetchDistrict();
-            alert('district deleted successfully');
+            Swal.fire({
+                title: 'Deleted!',
+                text: 'District deleted successfully.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch state');
+            if (error.response?.status === 401) {
+                Swal.fire({
+                    title: 'Session Expired!',
+                    text: 'Please log in again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    navigate('/login'); // Redirect to login
+                });
+            }
+        }
+    };
+
+    const handleModalClose = () => {
+        setShowEditModal(false);
+        setEditingDistrict(null);
+    };
+
+    const handleUpdate = async (stateId, updatedData) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.put(
+                `${API_BASE_URL}/api/district/${stateId}`,
+                updatedData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                setDistricts((prevSubCategories) =>
+                    prevSubCategories.map((sub) =>
+                        sub.id === stateId ? { ...sub, ...updatedData } : sub
+                    )
+                );
+                alert('District updated successfully');
+                setShowEditModal(false);
+                await fetchDistrict()
+                return { success: true };
+            }
+            return true;
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to fetch categories');
             if (error.response?.status === 401) {
                 alert('Session expired. Please log in again.');
                 navigate('/login'); // Redirect to login page
@@ -131,43 +200,23 @@ function District() {
                         <option value="gu">ગુજરાતી</option>
                         <option value="hi">हिंदी</option>
                     </Form.Select>
-
-                    {/* <Form.Select style={{ width: '150px' }}>
-                                    <option value="">Select State</option>
-                                </Form.Select> */}
                 </div>
-                {/* <div className='flex w-full justify-end gap-2 mb-1'>
-                    {['en', 'gu', 'hi'].map(lang => (
-                        <button
-                            key={lang}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium 
-                          ${modalLanguage === lang ? 'bg-blue-100 text-blue-700' : 'bg-blue-100 text-blue-700'} 
-                          border border-blue-200 hover:bg-blue-200 transition-colors duration-200
-                        disabled:bg-gray-300 disabled:text-gray-500 cursor-not-allowed`}
-                            onClick={() => handleLanguageSelection(lang)}
-                            disabled={selectedLanguage !== lang} // ✅ Disable other buttons
-                        >
-                            {lang.toUpperCase()}
-                        </button>
-                    ))}
-                </div> */}
             </div>
 
             <div className="overflow-x-auto">
                 <Table striped bordered hover responsive className='pb-0'>
                     <thead>
                         <tr>
-                            <th></th>
                             <th
                                 onClick={() => handleSort('name')}
                                 style={{ cursor: 'pointer' }}
                             >
                                 Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '⬆' : '⬇') : ''}
                             </th>
-                            {/* <th
-                                        >
-                                            Polygon
-                                        </th> */}
+                            <th
+                            >
+                                Polygon
+                            </th>
                             <th
                             >
                                 Total Users
@@ -181,46 +230,77 @@ function District() {
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="8" className="text-center py-4">Loading...</td>
+                                <td colSpan="7" className="text-center py-4">Loading...</td>
                             </tr>
                         ) : error ? (
                             <tr>
-                                <td colSpan="8" className="text-center text-danger py-4">{error}</td>
+                                <td colSpan="7" className="text-center text-danger py-4">{error}</td>
                             </tr>
                         ) : districts.length === 0 ? (
                             <tr>
-                                <td colSpan="8" className="text-center py-4">No district found</td>
+                                <td colSpan="7" className="text-center py-4">No district found</td>
                             </tr>
                         ) : (
                             districts.map((district, index) => (
                                 <tr key={district.id}>
-                                    <td className='text-center'>
-                                        <input
-                                            type="checkbox"
-                                            className='h-5 w-5 mt-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
-                                        // checked={selectedState.includes(state.id)}
-                                        // onChange={() => handleCheckboxChange(state.id)}
-                                        />
-                                    </td>
                                     <td>{district.name}</td>
-                                    {/* <td></td> */}
+                                    <td></td>
                                     <td>{district.totaluser}</td>
                                     <td>{district.typeCount}</td>
                                     <td>
-                                        <div className='flex flex-col'>
-                                            <span>Lat : {district.location !== 'N/A' ? district.location.split(',')[0].trim() : 'N/A'}</span>
-                                            <span>Lng : {district.location !== 'N/A' ? district.location.split(',')[1].trim() : 'N/A'}
-                                            </span>
+                                        <button
+                                            onClick={() => {
+                                                if (district.location === 'N/A') {
+                                                    alert('Location data not available');
+                                                    // or use alert('Location data not available');
+                                                    return;
+                                                }
+                                                setSelectedLocation(district.location);
+                                                setShowMapModal(true);
+                                            }}
+                                            className={`
+                                              p-2 rounded-full transition-all duration-200
+                                              ${district.location === 'N/A'
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700'
+                                                }
+                                            `}
+                                            title={district.location === 'N/A' ? 'Location unavailable' : 'View on map'}
+                                        // disabled={state.location === 'N/A'}
+                                        >
+                                            <FaMapMarkerAlt className="text-lg" />
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <div className='flex w-full gap-1 mb-1'>
+                                            {['en', 'gu', 'hi'].map(lang => (
+                                                <button
+                                                    key={lang}
+                                                    className={`px-2 py-1.5 rounded-md text-sm font-medium 
+          border border-blue-200 hover:bg-blue-200 transition-colors duration-200
+          ${modalLanguage === lang ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-700'}`}
+                                                    onClick={() => {
+                                                        setEditingDistrict(district.id);
+                                                        setModalLanguage(lang);
+                                                        setShowEditModal(true);
+                                                    }}
+                                                >
+                                                    {lang.toUpperCase()}
+                                                </button>
+                                            ))}
                                         </div>
                                     </td>
-                                    <td>{district.languages}</td>
+
                                     <td>
                                         <Button
                                             variant="danger"
                                             size="sm"
                                             onClick={() => handleDelete(district.id)}
+                                            disabled={district.role === 'admin'}
+                                            className="flex items-center justify-center gap-1 px-3 py-1.5"
                                         >
-                                            Delete
+                                            <FaTrash className="text-sm" />
+                                            <span className="sr-only">Delete</span> {/* Screen reader only text */}
                                         </Button>
                                     </td>
                                 </tr>
@@ -284,6 +364,45 @@ function District() {
                 handleClose={() => setShowModal(false)}
                 refreshData={fetchDistrict}
             />
+
+            {editingDistrict && (
+                <EditDistrictModal
+                    show={showEditModal}
+                    handleClose={handleModalClose}
+                    districtId={editingDistrict}
+                    onUpdate={handleUpdate}
+                    selectedLanguage={modalLanguage}
+                />
+            )}
+
+            {/* Map Modal */}
+            <Modal show={showMapModal} onHide={() => setShowMapModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Location Map</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedLocation && (
+                        <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                frameBorder="0"
+                                scrolling="no"
+                                marginHeight="0"
+                                marginWidth="0"
+                                src={`https://maps.google.com/maps?q=${selectedLocation}&z=8&output=embed`}
+                                title="Location Map"
+                            >
+                            </iframe>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowMapModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
         </div>
     )
